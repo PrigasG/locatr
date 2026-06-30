@@ -39,6 +39,17 @@ Missing ZIP is recorded as `bad_address_flag == "missing_zip"` for
 audit, but it does not block geocoding when address + city + state are
 present.
 
+For one-off review, use
+[`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md)
+to see ranked ArcGIS candidates for a single address:
+
+``` r
+
+if (interactive()) {
+  geocode_address("22 peachton", city = "Sicklerville", state = "NJ")
+}
+```
+
 ## 2. Geocode with a guarded cascade
 
 ``` r

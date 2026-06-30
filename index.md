@@ -82,6 +82,27 @@ Rows with missing ZIP remain geocodable. Rows missing address/city, PO
 boxes, placeholder addresses, and test records still go to manual
 review.
 
+## Quick single-address lookup
+
+To check one address interactively - no data frame required - use
+[`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md).
+It cleans the text, asks ArcGIS for candidate matches ranked by
+confidence (highest first), and by default attaches the county and
+municipality each point falls in:
+
+``` r
+
+geocode_address(address = "22 peachton", city = "Sicklerville", state = "NJ")
+
+# keep only high-confidence matches, coordinates only
+geocode_address("1 Bay Ave", city = "Montclair", state = "NJ",
+                min_score = 90, geography = FALSE)
+```
+
+Set `min_score` to a confidence threshold (0-100), `max_candidates` to
+cap how many come back, and `geography = FALSE` to skip the
+county/municipality join.
+
 ## No-code web app
 
 For users who would rather not write R, the same pipeline is available

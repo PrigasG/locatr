@@ -101,11 +101,17 @@ omits the ZIP instead of ending in <code>NA</code>:</p>
 <p>Missing ZIP is recorded as
 <code>bad_address_flag == "missing_zip"</code> for audit, but it does
 not block geocoding when address + city + state are present.</p>
+<p>For one-off review, use <code><a href="../reference/geocode_address.html">geocode_address()</a></code> to see ranked
+ArcGIS candidates for a single address:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/geocode_address.html">geocode_address</a></span><span class="op">(</span><span class="st">"22 peachton"</span>, city <span class="op">=</span> <span class="st">"Sicklerville"</span>, state <span class="op">=</span> <span class="st">"NJ"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="geocode-with-a-guarded-cascade">2. Geocode with a guarded cascade<a class="anchor" aria-label="anchor" href="#geocode-with-a-guarded-cascade"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">geocoded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span><span class="op">)</span>   <span class="co"># Census -&gt; ArcGIS -&gt; name lookup</span></span></code></pre></div>
 <p><code><a href="../reference/geocode_records.html">geocode_records()</a></code> runs each tier in turn and validates
 against the configured region after each pass, so a later, fuzzier
@@ -115,7 +121,7 @@ service only retries what is still unplaced. The
 <div class="section level2">
 <h2 id="geography-join">3. Geography join<a class="anchor" aria-label="anchor" href="#geography-join"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">with_geography</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_county_muni.html">add_county_muni</a></span><span class="op">(</span><span class="va">geocoded</span>, state <span class="op">=</span> <span class="st">"NJ"</span><span class="op">)</span></span></code></pre></div>
 <p>The geography step is independent of the input address columns once
 coordinates exist. <code><a href="../reference/add_county_muni.html">add_county_muni()</a></code> builds Census
@@ -128,7 +134,7 @@ share a code column.</p>
 <div class="section level2">
 <h2 id="review-override-export">4. Review, override, export<a class="anchor" aria-label="anchor" href="#review-override-export"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_geocode_review.html">write_geocode_review</a></span><span class="op">(</span><span class="va">with_geography</span>, <span class="st">"manual_review.csv"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">final</span> <span class="op">&lt;-</span> <span class="va">with_geography</span> <span class="op">%&gt;%</span></span>

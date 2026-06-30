@@ -11,6 +11,8 @@
 
 - [`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md)
   : Run the full geocoding cascade
+- [`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md)
+  : Look up a single address and return ranked candidate points
 - [`geocode_census()`](https://prigasg.github.io/locatr/reference/geocode_census.md)
   : Primary geocode pass via the US Census batch geocoder
 - [`geocode_arcgis()`](https://prigasg.github.io/locatr/reference/geocode_arcgis.md)
