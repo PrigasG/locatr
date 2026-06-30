@@ -25,49 +25,10 @@ if (!requireNamespace("locatr", quietly = TRUE)) {
 }
 
 # ---- helpers ----------------------------------------------------------------
-
-# Read a tabular upload by extension.
-read_table_any <- function(path, name) {
-  ext <- tolower(tools::file_ext(name))
-  switch(
-    ext,
-    csv     = readr::read_csv(path, show_col_types = FALSE),
-    tsv     = readr::read_tsv(path, show_col_types = FALSE),
-    txt     = readr::read_csv(path, show_col_types = FALSE),
-    xlsx    = readxl::read_excel(path),
-    xls     = readxl::read_excel(path),
-    parquet = tibble::as_tibble(arrow::read_parquet(path)),
-    stop("Unsupported data file type: .", ext,
-         " (use csv, xlsx, xls, or parquet).")
-  )
-}
-
-# Read polygons from a zipped shapefile, a set of .shp sidecar files uploaded
-# together, or a single .geojson/.gpkg. `upload` is the fileInput data frame
-# (columns name, datapath).
-read_shapes_any <- function(upload) {
-  exts <- tolower(tools::file_ext(upload$name))
-  work <- file.path(tempdir(),
-                    paste0("locatr_shp_", as.integer(stats::runif(1, 1, 1e9))))
-  dir.create(work, showWarnings = FALSE, recursive = TRUE)
-
-  if (any(exts == "zip")) {
-    utils::unzip(upload$datapath[exts == "zip"][1], exdir = work)
-  } else {
-    # copy each uploaded file back to its real name so .shp finds its sidecars
-    file.copy(upload$datapath, file.path(work, upload$name))
-  }
-
-  candidates <- list.files(
-    work, pattern = "\\.(shp|gpkg|geojson|json)$",
-    full.names = TRUE, recursive = TRUE, ignore.case = TRUE
-  )
-  if (length(candidates) == 0) {
-    stop("No .shp, .gpkg or .geojson found. For a shapefile, upload the .zip ",
-         "or select the .shp together with its .dbf/.shx/.prj sidecars.")
-  }
-  sf::st_read(candidates[1], quiet = TRUE)
-}
+# Tabular/shapefile reading and the attribute-key geography join now live in the
+# locatr package (locatr:::.read_location_table, locatr:::.read_geography_layer,
+# locatr::add_muni_from_key) so this app stays a thin presentation layer. The
+# helpers below are UI-only: input guessing, navigation, and download shaping.
 
 # A region bbox for validation: locatr's preset where it exists, else a
 # continental-US fallback so geocoding still runs for any state.
@@ -82,11 +43,6 @@ guess_col <- function(cols, pattern, allow_none = FALSE) {
   hit <- cols[grepl(pattern, cols, ignore.case = TRUE)]
   if (length(hit) > 0) return(hit[1])
   if (allow_none) "" else cols[1]
-}
-
-pick_optional_col <- function(cols, pattern) {
-  hit <- cols[grepl(pattern, cols, ignore.case = TRUE)]
-  if (length(hit) > 0) hit[1] else NULL
 }
 
 # Run clean_addresses with column names supplied as strings.
@@ -110,87 +66,10 @@ drop_selected_cols <- function(data, drop_cols) {
   dplyr::select(data, -dplyr::any_of(drop_cols))
 }
 
-# "" / NULL -> NULL, so add_local_geography falls back to auto-detection
-# instead of looking for a column literally named "".
+# "" / NULL -> NULL, so the spatial join (add_muni_from_shapes) falls back to
+# auto-detection instead of looking for a column literally named "".
 nz_or_null <- function(x) {
   if (is.null(x) || length(x) == 0 || !nzchar(x)) NULL else x
-}
-
-# Non-spatial join: merge polygon attributes onto geocoded rows by a shared key
-# column. This is the fallback for when point-in-polygon is not the right
-# criteria (e.g. the shapefile is keyed by a region/ZIP/FIPS code the data also
-# carries). Produces the same location_* columns add_local_geography() does.
-attribute_join_geography <- function(geocoded, shapes, data_key, shp_key,
-                                     county_col = NULL, locality_col = NULL,
-                                     key_col = NULL) {
-  county_col   <- nz_or_null(county_col)
-  locality_col <- nz_or_null(locality_col)
-  key_col      <- nz_or_null(key_col)
-  shape_cols   <- names(shapes)
-  statefp_col <- pick_optional_col(shape_cols, "^statefp$|state.*fips")
-  county_code_col <- pick_optional_col(shape_cols, "^county_code$|^countyfp$|cnty.*code")
-  county_fips_col <- pick_optional_col(shape_cols, "county.*fips|cnty.*fips")
-  muni_code_col <- pick_optional_col(
-    shape_cols,
-    "municipality.*code|mun.*code|muni.*code|cousubfp|placefp|tractce"
-  )
-  muni_geoid_col <- pick_optional_col(shape_cols, "municipality.*geoid|muni.*geoid|^geoid$|gnis")
-  muni_name_standard_col <- pick_optional_col(
-    shape_cols,
-    "municipality.*standard|namelsad|municipality.*name|mun.*name|location_locality"
-  )
-  muni_type_col <- pick_optional_col(shape_cols, "municipality.*type|^lsad$|^type$|classfp|mtfcc")
-
-  attr_tbl <- sf::st_drop_geometry(shapes) %>%
-    dplyr::transmute(
-      .join_key         = as.character(.data[[shp_key]]),
-      .statefp          = if (!is.null(statefp_col)) as.character(.data[[statefp_col]]) else NA_character_,
-      location_county   = if (!is.null(county_col)) as.character(.data[[county_col]]) else NA_character_,
-      location_locality = if (!is.null(locality_col)) as.character(.data[[locality_col]]) else NA_character_,
-      muni_join_key     = if (!is.null(key_col)) as.character(.data[[key_col]]) else NA_character_,
-      county_code       = if (!is.null(county_code_col)) as.character(.data[[county_code_col]]) else NA_character_,
-      county_fips       = if (!is.null(county_fips_col)) as.character(.data[[county_fips_col]]) else NA_character_,
-      municipality_code = if (!is.null(muni_code_col)) as.character(.data[[muni_code_col]]) else NA_character_,
-      municipality_geoid = if (!is.null(muni_geoid_col)) as.character(.data[[muni_geoid_col]]) else NA_character_,
-      municipality_name_standard = if (!is.null(muni_name_standard_col)) as.character(.data[[muni_name_standard_col]]) else NA_character_,
-      municipality_type = if (!is.null(muni_type_col)) as.character(.data[[muni_type_col]]) else NA_character_
-    ) %>%
-    dplyr::distinct(.join_key, .keep_all = TRUE)
-
-  geocoded %>%
-    dplyr::mutate(.join_key = as.character(.data[[data_key]])) %>%
-    dplyr::left_join(attr_tbl, by = ".join_key") %>%
-    dplyr::mutate(
-      geography_match_status = dplyr::if_else(
-        is.na(.data$location_locality) & is.na(.data$location_county),
-        "no_geography_match", "geography_matched"
-      ),
-      County = .data$location_county,
-      Municipality = .data$location_locality,
-      muni_join_key = dplyr::coalesce(
-        .data$muni_join_key, .data$municipality_geoid,
-        .data$municipality_code
-      ),
-      county_fips = dplyr::coalesce(
-        .data$county_fips,
-        dplyr::if_else(
-          !is.na(.data$.statefp) & !is.na(.data$county_code),
-          paste0(.data$.statefp, .data$county_code),
-          NA_character_
-        )
-      ),
-      `Muni Key` = dplyr::if_else(
-        .data$geography_match_status == "geography_matched",
-        dplyr::coalesce(.data$muni_join_key,
-                        paste(.data$location_county, .data$location_locality, sep = "::")),
-        NA_character_
-      ),
-      muni_match_status = dplyr::if_else(
-        .data$geography_match_status == "geography_matched",
-        "muni_matched", "no_muni_match"
-      )
-    ) %>%
-    dplyr::select(-".join_key", -".statefp")
 }
 
 `%||%` <- function(x, y) {
@@ -403,7 +282,7 @@ server <- function(input, output, session) {
   # --- Step 1: upload + preview ---------------------------------------------
   observeEvent(input$data_file, {
     rv$data <- notify_error(
-      read_table_any(input$data_file$datapath, input$data_file$name),
+      locatr:::.read_location_table(input$data_file$datapath, input$data_file$name),
       "Could not read data file"
     )
     rv$geocoded <- NULL
@@ -525,7 +404,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$shp_file, {
     rv$geo_layer <- notify_error(
-      read_shapes_any(input$shp_file), "Could not read shapefile"
+      locatr:::.read_geography_layer(input$shp_file), "Could not read shapefile"
     )
   })
 
@@ -600,10 +479,10 @@ server <- function(input, output, session) {
         }
         if (is_shp && identical(input$join_mode, "key")) {
           req(input$data_key, input$shp_key)
-          joined <- attribute_join_geography(
+          joined <- locatr::add_muni_from_key(
             rv$geocoded, rv$geo_layer,
             data_key = input$data_key, shp_key = input$shp_key,
-            county_col = input$shp_county, locality_col = input$shp_locality,
+            county_col = input$shp_county, muni_col = input$shp_locality,
             key_col = input$shp_muni_key
           )
         } else {
