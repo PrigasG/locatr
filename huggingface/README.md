@@ -1,6 +1,6 @@
 ---
 title: locatr - Geocode + Local Geography
-emoji: map
+emoji: 🗺️
 colorFrom: blue
 colorTo: green
 sdk: docker
