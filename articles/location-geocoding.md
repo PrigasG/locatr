@@ -46,7 +46,7 @@ to see ranked ArcGIS candidates for a single address:
 ``` r
 
 if (interactive()) {
-  geocode_address("22 peachton", city = "Sicklerville", state = "NJ")
+  geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
 }
 ```
 
