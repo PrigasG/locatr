@@ -1,8 +1,6 @@
 # locatr
 
-<div style="float: right; width: 160px; margin-left: 1rem; margin-bottom: 1rem;">
-  <img src="man/figures/logo.png" alt="locatr logo" style="width: 100%; height: auto;" />
-</div>
+<img src="man/figures/logo.png" align="right" width="160" alt="locatr logo" />
 
 [![R-CMD-check](https://github.com/PrigasG/locatr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/PrigasG/locatr/actions/workflows/R-CMD-check.yaml)
 [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Space-yellow.svg)](https://huggingface.co/spaces/Prigas89/locatr_reviewer)
