@@ -92,3 +92,13 @@ apply_manual_overrides <- function(data, override_file, bbox = region_bbox("NJ")
   }
   NA
 }
+
+.pull_logical <- function(data, col, default = NA) {
+  if (col %in% names(data)) {
+    out <- data[[col]]
+    out[is.na(out)] <- default
+    out
+  } else {
+    rep(default, nrow(data))
+  }
+}

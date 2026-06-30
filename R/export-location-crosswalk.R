@@ -44,7 +44,8 @@ export_location_crosswalk <- function(data, path = NULL) {
       name_match_status     = .pull_if(data, "nm_status"),
       validation_status     = .pull_if(data, "validation_status"),
       geography_match_status = .pull_if(data, "geography_match_status"),
-      manual_override_used  = .pull_if(data, "manual_override_used"),
+      manual_override_used  = .pull_logical(data, "manual_override_used",
+                                            default = FALSE),
       review_status         = .data$review_status
     )
 

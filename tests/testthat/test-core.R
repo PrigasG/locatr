@@ -371,6 +371,33 @@ test_that("export_location_crosswalk keeps name match audit columns", {
   expect_equal(out$municipality_name_standard, "Trenton city")
   expect_equal(out$municipality_type, "city")
   expect_equal(out$muni_match_status, "muni_matched")
+  expect_false(out$manual_override_used)
+})
+
+test_that("export_location_crosswalk defaults blank manual overrides to FALSE", {
+  df <- tibble::tibble(
+    record_id = c("a", "b"),
+    record_name = c("One", "Two"),
+    address_clean = c("1 MAIN STREET", "2 MAIN STREET"),
+    city_clean = c("TRENTON", "TRENTON"),
+    state_clean = c("NJ", "NJ"),
+    zip_clean = c("08608", "08608"),
+    full_address_clean = c("1 MAIN STREET, TRENTON, NJ 08608",
+                           "2 MAIN STREET, TRENTON, NJ 08608"),
+    latitude = c(40.2, 40.3),
+    longitude = c(-74.7, -74.8),
+    geocode_method = c("census", "census"),
+    geocode_pass = c("pass_1_census", "pass_1_census"),
+    match_status = c("matched", "matched"),
+    review_status = c("auto_accepted", "auto_accepted")
+  )
+
+  out <- export_location_crosswalk(df)
+  expect_equal(out$manual_override_used, c(FALSE, FALSE))
+
+  df$manual_override_used <- c(NA, TRUE)
+  out2 <- export_location_crosswalk(df)
+  expect_equal(out2$manual_override_used, c(FALSE, TRUE))
 })
 
 # ---- build_local_geography (tigris mocked) ----------------------------------
