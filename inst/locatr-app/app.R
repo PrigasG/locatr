@@ -45,16 +45,19 @@ guess_col <- function(cols, pattern, allow_none = FALSE) {
   if (allow_none) "" else cols[1]
 }
 
-# Run clean_addresses with column names supplied as strings.
-clean_with_strings <- function(data, id, address, city, zip, name, state) {
+# Run clean_addresses with column names supplied as strings. Only address and
+# city are required; an empty id/zip/name string ("(none)") is dropped so the
+# package applies its optional-field defaults (surrogate id, NA zip).
+clean_with_strings <- function(data, address, city, id = "", zip = "",
+                               name = "", state = "NJ") {
   args <- list(
     data    = data,
-    id      = rlang::sym(id),
     address = rlang::sym(address),
     city    = rlang::sym(city),
-    zip     = rlang::sym(zip),
     state   = state
   )
+  if (!is.null(id) && nzchar(id))     args$id   <- rlang::sym(id)
+  if (!is.null(zip) && nzchar(zip))   args$zip  <- rlang::sym(zip)
   if (!is.null(name) && nzchar(name)) args$name <- rlang::sym(name)
   do.call(locatr::clean_addresses, args)
 }
@@ -255,7 +258,7 @@ server <- function(input, output, session) {
         tags$li(tags$b("Upload & preview"),
                 " - load a CSV, Excel, or Parquet file; one row per record."),
         tags$li(tags$b("Geocode"),
-                " - map your ID/address/city/ZIP (and optional name) columns, ",
+                " - map your address/city columns, optional ID/ZIP/name columns, ",
                 "pick the state, and run locatr's cascade (Census -> ArcGIS -> ",
                 "name lookup). Geocoding calls external services, so it needs ",
                 "network access and is capped by the row limit."),
@@ -308,14 +311,14 @@ server <- function(input, output, session) {
     req(rv$data)
     cols <- names(rv$data)
     tagList(
-      selectInput("col_id",   "Unique ID",  choices = cols,
-                  selected = guess_col(cols, "id|code|key")),
+      selectInput("col_id",   "Unique ID (optional)", choices = c("(auto)" = "", cols),
+                  selected = guess_col(cols, "id|code|key", allow_none = TRUE)),
       selectInput("col_addr", "Address",     choices = cols,
                   selected = guess_col(cols, "addr|street")),
       selectInput("col_city", "City",        choices = cols,
                   selected = guess_col(cols, "city|town|munic")),
-      selectInput("col_zip",  "ZIP",         choices = cols,
-                  selected = guess_col(cols, "zip|postal")),
+      selectInput("col_zip",  "ZIP (optional)", choices = c("(none)" = "", cols),
+                  selected = guess_col(cols, "zip|postal", allow_none = TRUE)),
       selectInput("col_name", "Name (optional)", choices = c("(none)" = "", cols),
                   selected = guess_col(cols, "name|facility|site|provider",
                                        allow_none = TRUE))
@@ -323,7 +326,7 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$run_geocode, {
-    req(rv$data, input$col_id, input$col_addr, input$col_city, input$col_zip)
+    req(rv$data, input$col_addr, input$col_city)
     withProgress(message = "Geocoding with locatr ...", value = 0, {
       result <- notify_error({
         dat <- rv$data
@@ -332,8 +335,9 @@ server <- function(input, output, session) {
         }
         incProgress(0.2, detail = "cleaning addresses")
         cleaned <- clean_with_strings(
-          dat, input$col_id, input$col_addr, input$col_city, input$col_zip,
-          input$col_name, input$state
+          dat, address = input$col_addr, city = input$col_city,
+          id = input$col_id, zip = input$col_zip,
+          name = input$col_name, state = input$state
         )
         incProgress(0.2, detail = "flagging bad addresses")
         flagged <- locatr::flag_bad_addresses(cleaned)

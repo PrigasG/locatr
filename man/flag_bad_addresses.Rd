@@ -18,6 +18,14 @@ Identifies PO boxes, placeholders, and missing fields so they go straight to
 review instead of wasting geocoder calls (or producing confident-but-wrong
 matches). Sets \code{bad_address_flag} and an initial \code{review_status}.
 }
+\details{
+A missing ZIP is recorded as \code{bad_address_flag == "missing_zip"} for audit,
+but it does \strong{not} block geocoding: as long as the address and city are
+present, the row stays \code{ready_for_geocoding} (Census matches on
+street/city/state and ArcGIS on the single-line address). Only genuinely
+unusable rows - missing address or city, PO boxes, placeholders, test
+records - are routed to \code{needs_manual_review}.
+}
 \examples{
 df <- tibble::tibble(
   record_id = c("a", "b"),

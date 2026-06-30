@@ -4,14 +4,26 @@
 \alias{clean_addresses}
 \title{Clean and standardise address fields}
 \usage{
-clean_addresses(data, id, address, city, zip, name = NULL, state = "NJ")
+clean_addresses(
+  data,
+  id = NULL,
+  address,
+  city,
+  zip = NULL,
+  name = NULL,
+  state = "NJ"
+)
 }
 \arguments{
 \item{data}{A data frame of records with addresses.}
 
-\item{id}{Bare column name holding a unique record identifier.}
+\item{id}{Optional bare column name holding a unique record identifier. When
+omitted, \code{record_id} is generated from the row number.}
 
-\item{address, city, zip}{Bare column names for the raw address parts.}
+\item{address, city}{Bare column names for the raw address and city. Required.}
+
+\item{zip}{Optional bare column name for the raw ZIP/postal code. When
+omitted, \code{zip_clean} is \code{NA}.}
 
 \item{name}{Optional bare column name for the record name (kept as
 \code{record_name} for review/exports). Defaults to \code{NULL}.}
@@ -34,6 +46,13 @@ in any case style (for example \code{Full_Address_Clean}), locatr preserves that
 user-supplied value as \code{full_address_raw} so there is only one canonical
 \code{full_address_clean} column after cleaning.
 }
+\details{
+Only \code{address} and \code{city} are required. When \code{id} is omitted, a surrogate
+\code{record_id} is generated from the row position. When \code{zip} is omitted (or
+empty), \code{zip_clean} is \code{NA} and \code{full_address_clean} is built without a
+trailing ZIP, so an address + city + state row is still geocodable. Supplying
+a ZIP improves Census structured-match precision but is no longer mandatory.
+}
 \examples{
 df <- tibble::tibble(
   LocationID = "NJ306100", Name = "Hackensack-UMC Mountainside",
@@ -41,4 +60,8 @@ df <- tibble::tibble(
 )
 clean_addresses(df, id = LocationID, address = Address,
                        city = City, zip = Zip, name = Name)
+
+# address + city only (surrogate id, no ZIP)
+clean_addresses(tibble::tibble(Address = "100 Main St", City = "Trenton"),
+                address = Address, city = City)
 }

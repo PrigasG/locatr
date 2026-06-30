@@ -8,7 +8,7 @@
 An audit-ready R toolkit for cleaning, geocoding, validating, reviewing, and
 exporting messy address and location data. It sits **on top of** `tidygeocoder`:
 `tidygeocoder` fetches coordinates; `locatr` decides whether those coordinates
-are trustworthy and produces a dashboard-ready crosswalk.
+are trustworthy and produces a dashboard- and GIS-ready crosswalk.
 
 ## Why It Exists
 
@@ -16,8 +16,9 @@ Geocoders are imperfect. Strict services miss real addresses; fuzzy services can
 confidently place a bad match far outside the intended service area. `locatr`
 wraps that reality with three guards:
 
-1. **Flagging** - PO boxes, placeholders, and missing fields never hit the
-   geocoder.
+1. **Flagging** - PO boxes, placeholders, and missing address/city fields never
+   hit the geocoder. ZIP is helpful but optional; missing ZIP is audited without
+   blocking address + city + state geocoding.
 2. **Fallback passes** - ArcGIS and name-based lookup can pick up what a stricter
    geocoder misses.
 3. **Region validation** - anything that lands outside the configured bounding
@@ -59,6 +60,19 @@ final <- with_geography %>%
   export_location_crosswalk("location_crosswalk.csv")
 ```
 
+At minimum, `clean_addresses()` needs an address and city. If no ID is supplied,
+`locatr` creates row-number IDs; if no ZIP is supplied, `zip_clean` stays `NA`
+and the single-line address omits the trailing ZIP:
+
+```r
+cleaned <- records %>%
+  clean_addresses(address = Address, city = City, state = "NJ") %>%
+  flag_bad_addresses()
+```
+
+Rows with missing ZIP remain geocodable. Rows missing address/city, PO boxes,
+placeholder addresses, and test records still go to manual review.
+
 ## No-code web app
 
 For users who would rather not write R, the same pipeline is available as a
@@ -66,7 +80,8 @@ Shiny app: upload a CSV/Excel/Parquet file, geocode it, and download the
 geocoded records immediately as CSV, Excel, or Parquet. If you also need
 county/locality fields, attach geography from Census TIGER/Line or an uploaded
 shapefile first, then download the geography crosswalk. The download step lets
-you remove columns before exporting.
+you remove columns before exporting. In the app, Unique ID and ZIP are optional:
+leave them as `(auto)` / `(none)` when your file only has address and city.
 
 ```r
 install.packages(c("shiny", "bslib", "DT", "leaflet",
@@ -182,3 +197,7 @@ state-specific reporting where "municipality" has legal meaning, use an
 official state GIS layer and pass it directly. `Muni Key` is kept as a readable
 fallback, but production joins should prefer `muni_join_key`,
 `municipality_geoid`, or another official code from your boundary source.
+
+Use `add_muni_from_shapes()` for point-in-polygon joins against your own
+boundary layer, or `add_muni_from_key()` when your records and geography share a
+code column such as ZIP, FIPS, or GEOID.

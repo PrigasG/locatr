@@ -116,12 +116,16 @@ bbox_from_sf <- function(geography_shapes, buffer = 0.05) {
 # Rows that began with a usable address may be retried by looser geocoders after
 # a prior tier failed validation. Rows flagged for manual review before any
 # geocoder call, such as PO boxes or placeholders, stay out of external services.
+# A `missing_zip` flag is informational, not blocking: an address + city row is
+# still geocodable, so it remains retryable by the ArcGIS and name tiers.
 .retryable_for_geocoding <- function(data) {
   status_retryable <- data$review_status %in%
     c("ready_for_geocoding", "needs_manual_review")
 
   if ("bad_address_flag" %in% names(data)) {
-    status_retryable & is.na(data$bad_address_flag)
+    blocking <- !is.na(data$bad_address_flag) &
+      data$bad_address_flag != "missing_zip"
+    status_retryable & !blocking
   } else {
     status_retryable
   }

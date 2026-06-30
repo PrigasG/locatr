@@ -8,9 +8,18 @@
 #' user-supplied value as `full_address_raw` so there is only one canonical
 #' `full_address_clean` column after cleaning.
 #'
+#' Only `address` and `city` are required. When `id` is omitted, a surrogate
+#' `record_id` is generated from the row position. When `zip` is omitted (or
+#' empty), `zip_clean` is `NA` and `full_address_clean` is built without a
+#' trailing ZIP, so an address + city + state row is still geocodable. Supplying
+#' a ZIP improves Census structured-match precision but is no longer mandatory.
+#'
 #' @param data A data frame of records with addresses.
-#' @param id   Bare column name holding a unique record identifier.
-#' @param address,city,zip Bare column names for the raw address parts.
+#' @param address,city Bare column names for the raw address and city. Required.
+#' @param id Optional bare column name holding a unique record identifier. When
+#'   omitted, `record_id` is generated from the row number.
+#' @param zip Optional bare column name for the raw ZIP/postal code. When
+#'   omitted, `zip_clean` is `NA`.
 #' @param name Optional bare column name for the record name (kept as
 #'   `record_name` for review/exports). Defaults to `NULL`.
 #' @param state Two-letter state used for all rows. Defaults to `"NJ"` for the
@@ -28,17 +37,34 @@
 #' )
 #' clean_addresses(df, id = LocationID, address = Address,
 #'                        city = City, zip = Zip, name = Name)
-clean_addresses <- function(data, id, address, city, zip,
+#'
+#' # address + city only (surrogate id, no ZIP)
+#' clean_addresses(tibble::tibble(Address = "100 Main St", City = "Trenton"),
+#'                 address = Address, city = City)
+clean_addresses <- function(data, id = NULL, address, city, zip = NULL,
                                    name = NULL, state = "NJ") {
+  id_q   <- rlang::enquo(id)
+  zip_q  <- rlang::enquo(zip)
   name_q <- rlang::enquo(name)
   data <- .protect_existing_full_address_clean(data)
 
+  record_id <- if (!quo_is_null(id_q)) {
+    as.character(rlang::eval_tidy(id_q, data))
+  } else {
+    as.character(seq_len(nrow(data)))
+  }
+  zip_raw <- if (!quo_is_null(zip_q)) {
+    as.character(rlang::eval_tidy(zip_q, data))
+  } else {
+    rep(NA_character_, nrow(data))
+  }
+
   out <- data %>%
     dplyr::mutate(
-      record_id = as.character({{ id }}),
+      record_id   = !!record_id,
       address_raw = as.character({{ address }}),
       city_raw    = as.character({{ city }}),
-      zip_raw     = as.character({{ zip }}),
+      zip_raw     = !!zip_raw,
       state_clean = state,
 
       address_clean = .data$address_raw %>%
@@ -80,11 +106,9 @@ clean_addresses <- function(data, id, address, city, zip,
         stringr::str_pad(width = 5, side = "left", pad = "0") %>%
         dplyr::na_if("00000"),
 
-      full_address_clean = paste0(
-        .data$address_clean, ", ",
-        .data$city_clean, ", ",
-        .data$state_clean, " ",
-        .data$zip_clean
+      full_address_clean = .make_full_address(
+        .data$address_clean, .data$city_clean,
+        .data$state_clean, .data$zip_clean
       )
     )
 
@@ -126,4 +150,15 @@ clean_addresses <- function(data, id, address, city, zip,
     }
     i <- i + 1L
   }
+}
+
+# Build the single-line address, appending the ZIP only when present so a
+# missing ZIP does not leave a trailing " NA" that confuses the geocoder.
+.make_full_address <- function(address, city, state, zip) {
+  base <- paste0(address, ", ", city, ", ", state)
+  dplyr::if_else(
+    is.na(zip) | zip == "",
+    base,
+    paste0(base, " ", zip)
+  )
 }

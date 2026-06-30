@@ -35,6 +35,9 @@ reference:
     contents:
       - build_local_geography
       - add_local_geography
+      - add_county_muni
+      - add_muni_from_shapes
+      - add_muni_from_key
       - backfill_from_reference
       - write_geocode_review
       - apply_manual_overrides
