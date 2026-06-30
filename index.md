@@ -9,8 +9,8 @@ Space](https://img.shields.io/badge/Hugging%20Face-Space-yellow.svg)](https://hu
 An audit-ready R toolkit for cleaning, geocoding, validating, reviewing,
 and exporting messy address and location data. It sits **on top of**
 `tidygeocoder`: `tidygeocoder` fetches coordinates; `locatr` decides
-whether those coordinates are trustworthy and produces a dashboard-ready
-crosswalk.
+whether those coordinates are trustworthy and produces a dashboard- and
+GIS-ready crosswalk.
 
 ## Why It Exists
 
@@ -18,8 +18,9 @@ Geocoders are imperfect. Strict services miss real addresses; fuzzy
 services can confidently place a bad match far outside the intended
 service area. `locatr` wraps that reality with three guards:
 
-1.  **Flagging** - PO boxes, placeholders, and missing fields never hit
-    the geocoder.
+1.  **Flagging** - PO boxes, placeholders, and missing address/city
+    fields never hit the geocoder. ZIP is helpful but optional; missing
+    ZIP is audited without blocking address + city + state geocoding.
 2.  **Fallback passes** - ArcGIS and name-based lookup can pick up what
     a stricter geocoder misses.
 3.  **Region validation** - anything that lands outside the configured
@@ -55,7 +56,7 @@ cleaned <- records %>%
 
 geocoded <- geocode_records(cleaned, bbox = region_bbox("NJ"))
 
-with_geography <- add_local_geography(geocoded, geography_shapes = my_local_shapes)
+with_geography <- add_county_muni(geocoded, state = "NJ")
 
 write_geocode_review(with_geography, "manual_review.csv")
 
@@ -63,6 +64,23 @@ final <- with_geography %>%
   apply_manual_overrides("manual_review_completed.csv", bbox = region_bbox("NJ")) %>%
   export_location_crosswalk("location_crosswalk.csv")
 ```
+
+At minimum,
+[`clean_addresses()`](https://prigasg.github.io/locatr/reference/clean_addresses.md)
+needs an address and city. If no ID is supplied, `locatr` creates
+row-number IDs; if no ZIP is supplied, `zip_clean` stays `NA` and the
+single-line address omits the trailing ZIP:
+
+``` r
+
+cleaned <- records %>%
+  clean_addresses(address = Address, city = City, state = "NJ") %>%
+  flag_bad_addresses()
+```
+
+Rows with missing ZIP remain geocodable. Rows missing address/city, PO
+boxes, placeholder addresses, and test records still go to manual
+review.
 
 ## No-code web app
 
@@ -72,6 +90,8 @@ download the geocoded records immediately as CSV, Excel, or Parquet. If
 you also need county/locality fields, attach geography from Census
 TIGER/Line or an uploaded shapefile first, then download the geography
 crosswalk. The download step lets you remove columns before exporting.
+In the app, Unique ID and ZIP are optional: leave them as `(auto)` /
+`(none)` when your file only has address and city.
 
 ``` r
 
@@ -163,9 +183,22 @@ NJ](https://njogis-newjersey.opendata.arcgis.com/datasets/municipal-boundaries-o
 
 ## Any State, With Census TIGER/Line
 
+[`add_county_muni()`](https://prigasg.github.io/locatr/reference/add_county_muni.md)
+is the shortest path when Census TIGER/Line boundaries are good enough
+for your workflow:
+
+``` r
+
+final <- add_county_muni(geocoded, state = "PA", geography = "county_subdivision")
+```
+
+Under the hood,
 [`build_local_geography()`](https://prigasg.github.io/locatr/reference/build_local_geography.md)
 pulls Census boundaries through `tigris` and standardises them to the
-`location_county` / `location_locality` schema:
+`location_county` / `location_locality` schema, plus stable join fields
+when the source provides them: `county_code`, `county_fips`,
+`municipality_code`, `municipality_geoid`, `municipality_name_standard`,
+`municipality_type`, and `muni_join_key`.
 
 ``` r
 
@@ -188,3 +221,13 @@ NY, and New England; `place` covers incorporated places/CDPs but misses
 townships and many unincorporated areas; `tract` uses tract GEOIDs. For
 high-stakes, state-specific reporting where “municipality” has legal
 meaning, use an official state GIS layer and pass it directly.
+`Muni Key` is kept as a readable fallback, but production joins should
+prefer `muni_join_key`, `municipality_geoid`, or another official code
+from your boundary source.
+
+Use
+[`add_muni_from_shapes()`](https://prigasg.github.io/locatr/reference/add_muni_from_shapes.md)
+for point-in-polygon joins against your own boundary layer, or
+[`add_muni_from_key()`](https://prigasg.github.io/locatr/reference/add_muni_from_key.md)
+when your records and geography share a code column such as ZIP, FIPS,
+or GEOID.

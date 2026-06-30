@@ -32,6 +32,12 @@
   : Build a local geography layer from Census TIGER/Line boundaries
 - [`add_local_geography()`](https://prigasg.github.io/locatr/reference/add_local_geography.md)
   : Join records to local geography
+- [`add_county_muni()`](https://prigasg.github.io/locatr/reference/add_county_muni.md)
+  : Add county and municipality fields from Census boundaries
+- [`add_muni_from_shapes()`](https://prigasg.github.io/locatr/reference/add_muni_from_shapes.md)
+  : Add county and municipality fields from boundary polygons
+- [`add_muni_from_key()`](https://prigasg.github.io/locatr/reference/add_muni_from_key.md)
+  : Add county and municipality fields by joining on a shared key
 - [`backfill_from_reference()`](https://prigasg.github.io/locatr/reference/backfill_from_reference.md)
   : Backfill verified coordinates from a trusted reference table (Tier
   0)
@@ -40,7 +46,7 @@
 - [`apply_manual_overrides()`](https://prigasg.github.io/locatr/reference/apply_manual_overrides.md)
   : Apply completed manual overrides
 - [`export_location_crosswalk()`](https://prigasg.github.io/locatr/reference/export_location_crosswalk.md)
-  : Export the dashboard-ready location crosswalk
+  : Export the location crosswalk
 
 ## App
 

@@ -1,9 +1,10 @@
-# Export the dashboard-ready location crosswalk
+# Export the location crosswalk
 
-Selects the final, stable set of columns for Tableau (or any BI tool)
-and, optionally, writes them to CSV. Audit columns are retained so a
-reviewer can always see how each coordinate was produced, including
-score/type/status fields from the name lookup tier when available.
+Selects the final, stable set of columns for dashboards, GIS joins, and
+reusable reference tables, and optionally writes them to CSV. Audit
+columns are retained so a reviewer can always see how each coordinate
+was produced, including score/type/status fields from the name lookup
+tier when available.
 
 ## Usage
 

@@ -5,7 +5,10 @@
 <url><loc>https://prigasg.github.io/locatr/articles/location-geocoding.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/authors.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/index.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/add_county_muni.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/add_local_geography.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/add_muni_from_key.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/add_muni_from_shapes.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/apply_manual_overrides.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/backfill_from_reference.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/bbox_from_sf.html</loc></url>

@@ -4,9 +4,11 @@ Downloads an authoritative Census boundary layer for a state with the
 tigris package and standardises it into the two-column schema
 [`add_local_geography()`](https://prigasg.github.io/locatr/reference/add_local_geography.md)
 expects: `location_county` (always from counties) and
-`location_locality` (from the requested `geography`). This makes
-"locality" a configurable concept, because what counts as a municipality
-is not consistent across states.
+`location_locality` (from the requested `geography`). It also carries
+stable Census identifiers such as `county_fips`, `municipality_geoid`,
+and `muni_join_key` when those fields exist. This makes "locality" a
+configurable concept, because what counts as a municipality is not
+consistent across states.
 
 ## Usage
 
@@ -53,8 +55,8 @@ build_local_geography(
 ## Value
 
 An `sf` polygon layer in WGS84 (EPSG:4326) with `location_county`,
-`location_locality`, and `geometry`, ready for
-`add_local_geography(geography_shapes = ...)`.
+`location_locality`, stable join-code columns when available, and
+`geometry`, ready for `add_local_geography(geography_shapes = ...)`.
 
 ## Details
 

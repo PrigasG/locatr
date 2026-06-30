@@ -65,6 +65,15 @@ matches). Sets <code>bad_address_flag</code> and an initial <code>review_status<
     <p><code>data</code> with added columns <code>bad_address_flag</code> and <code>review_status</code>.
 Rows fit for geocoding get <code>review_status == "ready_for_geocoding"</code>.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>A missing ZIP is recorded as <code>bad_address_flag == "missing_zip"</code> for audit,
+but it does <strong>not</strong> block geocoding: as long as the address and city are
+present, the row stays <code>ready_for_geocoding</code> (Census matches on
+street/city/state and ArcGIS on the single-line address). Only genuinely
+unusable rows - missing address or city, PO boxes, placeholders, test
+records - are routed to <code>needs_manual_review</code>.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

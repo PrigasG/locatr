@@ -23,7 +23,21 @@ cleaned <- records %>%
 [`clean_addresses()`](https://prigasg.github.io/locatr/reference/clean_addresses.md)
 adds `*_clean` columns and a `full_address_clean` string;
 [`flag_bad_addresses()`](https://prigasg.github.io/locatr/reference/flag_bad_addresses.md)
-sends PO boxes and placeholders straight to review.
+sends PO boxes and placeholders straight to review. Only address and
+city are required. If your file has no ID, locatr generates row-number
+IDs; if it has no ZIP, `zip_clean` stays `NA` and the single-line
+address omits the ZIP instead of ending in `NA`:
+
+``` r
+
+cleaned_minimal <- records %>%
+  clean_addresses(address = Address, city = City, state = "NJ") %>%
+  flag_bad_addresses()
+```
+
+Missing ZIP is recorded as `bad_address_flag == "missing_zip"` for
+audit, but it does not block geocoding when address + city + state are
+present.
 
 ## 2. Geocode with a guarded cascade
 
@@ -41,11 +55,18 @@ unplaced. The `geocode_pass` column records which tier placed each row.
 
 ``` r
 
-with_geography <- add_local_geography(geocoded)
+with_geography <- add_county_muni(geocoded, state = "NJ")
 ```
 
-Pass an `sf` boundary layer to adapt the geography join, e.g.
-`add_local_geography(geocoded, geography_shapes = my_local_shapes)`.
+The geography step is independent of the input address columns once
+coordinates exist.
+[`add_county_muni()`](https://prigasg.github.io/locatr/reference/add_county_muni.md)
+builds Census TIGER/Line geography and attaches county/locality fields.
+Pass an `sf` boundary layer to adapt the geography join,
+e.g. `add_muni_from_shapes(geocoded, muni_shapes = my_local_shapes)`, or
+use
+[`add_muni_from_key()`](https://prigasg.github.io/locatr/reference/add_muni_from_key.md)
+when your records and geography share a code column.
 
 ## 4. Review, override, export
 
@@ -58,5 +79,6 @@ final <- with_geography %>%
   export_location_crosswalk("location_crosswalk.csv")
 ```
 
-`final` is ready to point Tableau at, and every row carries the audit
-columns that explain how its coordinate was produced.
+`final` is ready for Tableau, GIS joins, or a reusable reference table,
+and every row carries the audit columns that explain how its coordinate
+was produced.

@@ -12,7 +12,15 @@ column after cleaning.
 ## Usage
 
 ``` r
-clean_addresses(data, id, address, city, zip, name = NULL, state = "NJ")
+clean_addresses(
+  data,
+  id = NULL,
+  address,
+  city,
+  zip = NULL,
+  name = NULL,
+  state = "NJ"
+)
 ```
 
 ## Arguments
@@ -23,11 +31,17 @@ clean_addresses(data, id, address, city, zip, name = NULL, state = "NJ")
 
 - id:
 
-  Bare column name holding a unique record identifier.
+  Optional bare column name holding a unique record identifier. When
+  omitted, `record_id` is generated from the row number.
 
-- address, city, zip:
+- address, city:
 
-  Bare column names for the raw address parts.
+  Bare column names for the raw address and city. Required.
+
+- zip:
+
+  Optional bare column name for the raw ZIP/postal code. When omitted,
+  `zip_clean` is `NA`.
 
 - name:
 
@@ -45,6 +59,15 @@ clean_addresses(data, id, address, city, zip, name = NULL, state = "NJ")
 `city_raw`, `zip_raw`, optional `full_address_raw`, `address_clean`,
 `city_clean`, `state_clean`, `zip_clean`, `full_address_clean`.
 
+## Details
+
+Only `address` and `city` are required. When `id` is omitted, a
+surrogate `record_id` is generated from the row position. When `zip` is
+omitted (or empty), `zip_clean` is `NA` and `full_address_clean` is
+built without a trailing ZIP, so an address + city + state row is still
+geocodable. Supplying a ZIP improves Census structured-match precision
+but is no longer mandatory.
+
 ## Examples
 
 ``` r
@@ -60,4 +83,14 @@ clean_addresses(df, id = LocationID, address = Address,
 #> 1 NJ306100   Hackens… ONE BA… Mont… 7042  NJ306100  ONE BAY AVE Montcla… 7042   
 #> # ℹ 6 more variables: state_clean <chr>, address_clean <chr>, city_clean <chr>,
 #> #   zip_clean <chr>, full_address_clean <chr>, record_name <chr>
+
+# address + city only (surrogate id, no ZIP)
+clean_addresses(tibble::tibble(Address = "100 Main St", City = "Trenton"),
+                address = Address, city = City)
+#> # A tibble: 1 × 12
+#>   Address City  record_id address_raw city_raw zip_raw state_clean address_clean
+#>   <chr>   <chr> <chr>     <chr>       <chr>    <chr>   <chr>       <chr>        
+#> 1 100 Ma… Tren… 1         100 Main St Trenton  NA      NJ          100 MAIN STR…
+#> # ℹ 4 more variables: city_clean <chr>, zip_clean <chr>,
+#> #   full_address_clean <chr>, record_name <chr>
 ```

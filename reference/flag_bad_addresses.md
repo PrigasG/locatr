@@ -23,6 +23,15 @@ flag_bad_addresses(data)
 `data` with added columns `bad_address_flag` and `review_status`. Rows
 fit for geocoding get `review_status == "ready_for_geocoding"`.
 
+## Details
+
+A missing ZIP is recorded as `bad_address_flag == "missing_zip"` for
+audit, but it does **not** block geocoding: as long as the address and
+city are present, the row stays `ready_for_geocoding` (Census matches on
+street/city/state and ArcGIS on the single-line address). Only genuinely
+unusable rows - missing address or city, PO boxes, placeholders, test
+records - are routed to `needs_manual_review`.
+
 ## Examples
 
 ``` r
