@@ -116,15 +116,18 @@ nz_or_null <- function(x) {
 # criteria (e.g. the shapefile is keyed by a region/ZIP/FIPS code the data also
 # carries). Produces the same location_* columns add_local_geography() does.
 attribute_join_geography <- function(geocoded, shapes, data_key, shp_key,
-                                     county_col = NULL, locality_col = NULL) {
+                                     county_col = NULL, locality_col = NULL,
+                                     key_col = NULL) {
   county_col   <- nz_or_null(county_col)
   locality_col <- nz_or_null(locality_col)
+  key_col      <- nz_or_null(key_col)
 
   attr_tbl <- sf::st_drop_geometry(shapes) %>%
     dplyr::transmute(
       .join_key         = as.character(.data[[shp_key]]),
       location_county   = if (!is.null(county_col)) as.character(.data[[county_col]]) else NA_character_,
-      location_locality = if (!is.null(locality_col)) as.character(.data[[locality_col]]) else NA_character_
+      location_locality = if (!is.null(locality_col)) as.character(.data[[locality_col]]) else NA_character_,
+      muni_key          = if (!is.null(key_col)) as.character(.data[[key_col]]) else NA_character_
     ) %>%
     dplyr::distinct(.join_key, .keep_all = TRUE)
 
@@ -135,9 +138,21 @@ attribute_join_geography <- function(geocoded, shapes, data_key, shp_key,
       geography_match_status = dplyr::if_else(
         is.na(.data$location_locality) & is.na(.data$location_county),
         "no_geography_match", "geography_matched"
+      ),
+      County = .data$location_county,
+      Municipality = .data$location_locality,
+      `Muni Key` = dplyr::if_else(
+        .data$geography_match_status == "geography_matched",
+        dplyr::coalesce(.data$muni_key,
+                        paste(.data$location_county, .data$location_locality, sep = "::")),
+        NA_character_
+      ),
+      muni_match_status = dplyr::if_else(
+        .data$geography_match_status == "geography_matched",
+        "muni_matched", "no_muni_match"
       )
     ) %>%
-    dplyr::select(-".join_key")
+    dplyr::select(-".join_key", -"muni_key")
 }
 
 `%||%` <- function(x, y) {
@@ -479,7 +494,10 @@ server <- function(input, output, session) {
                   selected = guess_col(cols, "county")),
       selectInput("shp_locality", "Locality column (polygon attribute)",
                   choices = c(none, cols),
-                  selected = guess_col(cols, "local|mun|name|place|town"))
+                  selected = guess_col(cols, "local|mun|name|place|town")),
+      selectInput("shp_muni_key", "Muni key column (optional)",
+                  choices = c(none, cols),
+                  selected = guess_col(cols, "muni.*key|mun.*code|geoid|gnis"))
     )
 
     if (identical(input$join_mode, "key")) {
@@ -524,14 +542,17 @@ server <- function(input, output, session) {
           joined <- attribute_join_geography(
             rv$geocoded, rv$geo_layer,
             data_key = input$data_key, shp_key = input$shp_key,
-            county_col = input$shp_county, locality_col = input$shp_locality
+            county_col = input$shp_county, locality_col = input$shp_locality,
+            key_col = input$shp_muni_key
           )
         } else {
           county_col   <- if (is_shp) nz_or_null(input$shp_county) else NULL
           locality_col <- if (is_shp) nz_or_null(input$shp_locality) else NULL
-          joined <- locatr::add_local_geography(
-            rv$geocoded, geography_shapes = rv$geo_layer,
-            county_col = county_col, locality_col = locality_col
+          key_col      <- if (is_shp) nz_or_null(input$shp_muni_key) else NULL
+          joined <- locatr::add_muni_from_shapes(
+            rv$geocoded, muni_shapes = rv$geo_layer,
+            county_col = county_col, muni_col = locality_col,
+            key_col = key_col
           )
         }
         locatr::export_location_crosswalk(joined)

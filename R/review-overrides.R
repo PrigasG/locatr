@@ -83,3 +83,12 @@ apply_manual_overrides <- function(data, override_file, bbox = region_bbox("NJ")
 .pull_if <- function(data, col) {
   if (col %in% names(data)) data[[col]] else NA
 }
+
+.pull_first <- function(data, cols) {
+  for (col in cols) {
+    if (col %in% names(data)) {
+      return(data[[col]])
+    }
+  }
+  NA
+}

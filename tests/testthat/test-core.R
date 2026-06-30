@@ -335,6 +335,11 @@ test_that("export_location_crosswalk keeps name match audit columns", {
     full_address_clean = "1 MAIN STREET, TRENTON, NJ 08608",
     latitude = 40.2,
     longitude = -74.7,
+    location_county = "Mercer",
+    location_locality = "Trenton",
+    `Muni Key` = "34021-74000",
+    muni_match_status = "muni_matched",
+    geography_match_status = "geography_matched",
     geocode_method = "arcgis_byname",
     geocode_pass = "pass_4_name_lookup",
     match_status = "matched_low_confidence",
@@ -349,6 +354,10 @@ test_that("export_location_crosswalk keeps name match audit columns", {
   expect_equal(out$name_match_score, 80)
   expect_equal(out$name_match_type, "POI")
   expect_equal(out$name_match_status, "name_matched_low_confidence")
+  expect_equal(out$County, "Mercer")
+  expect_equal(out$Municipality, "Trenton")
+  expect_equal(out[["Muni Key"]], "34021-74000")
+  expect_equal(out$muni_match_status, "muni_matched")
 })
 
 # ---- build_local_geography (tigris mocked) ----------------------------------
@@ -441,6 +450,33 @@ test_that("add_local_geography flags ambiguous overlapping geography without dup
   expect_equal(out$geography_match_status, "ambiguous_geography_match")
   expect_true(is.na(out$location_county))
   expect_true(is.na(out$location_locality))
+})
+
+test_that("add_muni_from_shapes adds Tableau municipality fields", {
+  shapes <- sf::st_sf(
+    COUNTY = "Mercer",
+    MUN = "Trenton",
+    MUNI_KEY = "34021-74000",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+  points <- tibble::tibble(
+    record_id = "a",
+    latitude = 40.5,
+    longitude = -74.5
+  )
+
+  out <- add_muni_from_shapes(
+    points,
+    muni_shapes = shapes,
+    county_col = "COUNTY",
+    muni_col = "MUN",
+    key_col = "MUNI_KEY"
+  )
+
+  expect_equal(out$County, "Mercer")
+  expect_equal(out$Municipality, "Trenton")
+  expect_equal(out[["Muni Key"]], "34021-74000")
+  expect_equal(out$muni_match_status, "muni_matched")
 })
 
 test_that("build_local_geography uses tract GEOID as locality when available (mocked)", {
