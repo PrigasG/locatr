@@ -1,9 +1,9 @@
-#' Export the dashboard-ready location crosswalk
+#' Export the location crosswalk
 #'
-#' Selects the final, stable set of columns for Tableau (or any BI tool) and,
-#' optionally, writes them to CSV. Audit columns are retained so a reviewer can
-#' always see how each coordinate was produced, including score/type/status
-#' fields from the name lookup tier when available.
+#' Selects the final, stable set of columns for dashboards, GIS joins, and
+#' reusable reference tables, and optionally writes them to CSV. Audit columns
+#' are retained so a reviewer can always see how each coordinate was produced,
+#' including score/type/status fields from the name lookup tier when available.
 #'
 #' @param data A fully processed data frame.
 #' @param path Optional output CSV path. When `NULL`, nothing is written.
@@ -27,6 +27,13 @@ export_location_crosswalk <- function(data, path = NULL) {
       County                = .pull_first(data, c("County", "location_county")),
       Municipality          = .pull_first(data, c("Municipality", "location_locality")),
       `Muni Key`            = .pull_first(data, c("Muni Key", "muni_key")),
+      muni_join_key         = .pull_if(data, "muni_join_key"),
+      county_code           = .pull_if(data, "county_code"),
+      county_fips           = .pull_if(data, "county_fips"),
+      municipality_code     = .pull_if(data, "municipality_code"),
+      municipality_geoid    = .pull_if(data, "municipality_geoid"),
+      municipality_name_standard = .pull_if(data, "municipality_name_standard"),
+      municipality_type     = .pull_if(data, "municipality_type"),
       muni_match_status     = .pull_first(data, c("muni_match_status",
                                                   "geography_match_status")),
       geocode_method        = .data$geocode_method,

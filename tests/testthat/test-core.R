@@ -338,6 +338,13 @@ test_that("export_location_crosswalk keeps name match audit columns", {
     location_county = "Mercer",
     location_locality = "Trenton",
     `Muni Key` = "34021-74000",
+    muni_join_key = "34021-74000",
+    county_code = "021",
+    county_fips = "34021",
+    municipality_code = "74000",
+    municipality_geoid = "3402174000",
+    municipality_name_standard = "Trenton city",
+    municipality_type = "city",
     muni_match_status = "muni_matched",
     geography_match_status = "geography_matched",
     geocode_method = "arcgis_byname",
@@ -357,6 +364,12 @@ test_that("export_location_crosswalk keeps name match audit columns", {
   expect_equal(out$County, "Mercer")
   expect_equal(out$Municipality, "Trenton")
   expect_equal(out[["Muni Key"]], "34021-74000")
+  expect_equal(out$muni_join_key, "34021-74000")
+  expect_equal(out$county_fips, "34021")
+  expect_equal(out$municipality_code, "74000")
+  expect_equal(out$municipality_geoid, "3402174000")
+  expect_equal(out$municipality_name_standard, "Trenton city")
+  expect_equal(out$municipality_type, "city")
   expect_equal(out$muni_match_status, "muni_matched")
 })
 
@@ -381,7 +394,8 @@ test_that("build_local_geography standardises county_subdivision schema (mocked)
     geometry = .test_poly(-75, 40, -74, 41)
   )
   fake_subs <- sf::st_sf(
-    STATEFP = "34", COUNTYFP = "021", NAME = "Trenton",
+    STATEFP = "34", COUNTYFP = "021", COUSUBFP = "74000",
+    GEOID = "3402174000", NAME = "Trenton", NAMELSAD = "Trenton city",
     geometry = .test_poly(-74.8, 40.1, -74.6, 40.3)
   )
   testthat::local_mocked_bindings(
@@ -396,6 +410,13 @@ test_that("build_local_geography standardises county_subdivision schema (mocked)
   expect_true(all(c("location_county", "location_locality") %in% names(areas)))
   expect_equal(areas$location_county, "Mercer")
   expect_equal(areas$location_locality, "Trenton")
+  expect_equal(areas$county_code, "021")
+  expect_equal(areas$county_fips, "34021")
+  expect_equal(areas$municipality_code, "74000")
+  expect_equal(areas$municipality_geoid, "3402174000")
+  expect_equal(areas$municipality_name_standard, "Trenton city")
+  expect_equal(areas$municipality_type, "county_subdivision")
+  expect_equal(areas$muni_join_key, "3402174000")
   expect_equal(sf::st_crs(areas)$epsg, 4326L)
 })
 
@@ -415,6 +436,9 @@ test_that("build_local_geography 'county' sets locality to the county (mocked)",
 
   expect_equal(areas$location_county, "Mercer")
   expect_equal(areas$location_locality, "Mercer")
+  expect_equal(areas$county_fips, "34021")
+  expect_equal(areas$municipality_geoid, "34021")
+  expect_equal(areas$muni_join_key, "34021")
 })
 
 test_that("bbox_from_sf returns a padded WGS84 bbox", {
@@ -452,11 +476,17 @@ test_that("add_local_geography flags ambiguous overlapping geography without dup
   expect_true(is.na(out$location_locality))
 })
 
-test_that("add_muni_from_shapes adds Tableau municipality fields", {
+test_that("add_muni_from_shapes adds stable municipality join fields", {
   shapes <- sf::st_sf(
     COUNTY = "Mercer",
     MUN = "Trenton",
     MUNI_KEY = "34021-74000",
+    COUNTYFP = "021",
+    COUNTY_FIPS = "34021",
+    MUN_CODE = "74000",
+    GEOID = "3402174000",
+    NAMELSAD = "Trenton city",
+    LSAD = "city",
     geometry = .test_poly(-75, 40, -74, 41)
   )
   points <- tibble::tibble(
@@ -476,10 +506,17 @@ test_that("add_muni_from_shapes adds Tableau municipality fields", {
   expect_equal(out$County, "Mercer")
   expect_equal(out$Municipality, "Trenton")
   expect_equal(out[["Muni Key"]], "34021-74000")
+  expect_equal(out$muni_join_key, "34021-74000")
+  expect_equal(out$county_code, "021")
+  expect_equal(out$county_fips, "34021")
+  expect_equal(out$municipality_code, "74000")
+  expect_equal(out$municipality_geoid, "3402174000")
+  expect_equal(out$municipality_name_standard, "Trenton city")
+  expect_equal(out$municipality_type, "city")
   expect_equal(out$muni_match_status, "muni_matched")
 })
 
-test_that("add_county_muni builds Census geography and adds Tableau fields", {
+test_that("add_county_muni builds Census geography and adds stable join fields", {
   skip_if_not_installed("tigris")
 
   fake_counties <- sf::st_sf(
@@ -487,7 +524,8 @@ test_that("add_county_muni builds Census geography and adds Tableau fields", {
     geometry = .test_poly(-75, 40, -74, 41)
   )
   fake_subs <- sf::st_sf(
-    STATEFP = "34", COUNTYFP = "021", NAME = "Trenton",
+    STATEFP = "34", COUNTYFP = "021", COUSUBFP = "74000",
+    GEOID = "3402174000", NAME = "Trenton", NAMELSAD = "Trenton city",
     geometry = .test_poly(-75, 40, -74, 41)
   )
   testthat::local_mocked_bindings(
@@ -505,7 +543,13 @@ test_that("add_county_muni builds Census geography and adds Tableau fields", {
 
   expect_equal(out$County, "Mercer")
   expect_equal(out$Municipality, "Trenton")
-  expect_equal(out[["Muni Key"]], "Mercer::Trenton")
+  expect_equal(out[["Muni Key"]], "3402174000")
+  expect_equal(out$muni_join_key, "3402174000")
+  expect_equal(out$county_fips, "34021")
+  expect_equal(out$municipality_code, "74000")
+  expect_equal(out$municipality_geoid, "3402174000")
+  expect_equal(out$municipality_name_standard, "Trenton city")
+  expect_equal(out$municipality_type, "county_subdivision")
   expect_equal(out$muni_match_status, "muni_matched")
 })
 
@@ -517,7 +561,8 @@ test_that("build_local_geography uses tract GEOID as locality when available (mo
     geometry = .test_poly(-75, 40, -74, 41)
   )
   fake_tracts <- sf::st_sf(
-    STATEFP = "34", COUNTYFP = "021", NAME = "1.01", GEOID = "34021000101",
+    STATEFP = "34", COUNTYFP = "021", TRACTCE = "000101",
+    NAME = "1.01", GEOID = "34021000101", NAMELSAD = "Census Tract 1.01",
     geometry = .test_poly(-74.8, 40.1, -74.6, 40.3)
   )
   testthat::local_mocked_bindings(
@@ -530,6 +575,9 @@ test_that("build_local_geography uses tract GEOID as locality when available (mo
 
   expect_equal(areas$location_county, "Mercer")
   expect_equal(areas$location_locality, "34021000101")
+  expect_equal(areas$municipality_code, "000101")
+  expect_equal(areas$municipality_geoid, "34021000101")
+  expect_equal(areas$municipality_name_standard, "Census Tract 1.01")
 })
 
 test_that("build_local_geography standardises place schema (mocked)", {

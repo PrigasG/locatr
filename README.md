@@ -156,7 +156,9 @@ final <- add_county_muni(geocoded, state = "PA", geography = "county_subdivision
 
 Under the hood, `build_local_geography()` pulls Census boundaries through
 `tigris` and standardises them to the `location_county` / `location_locality`
-schema:
+schema, plus stable join fields when the source provides them:
+`county_code`, `county_fips`, `municipality_code`, `municipality_geoid`,
+`municipality_name_standard`, `municipality_type`, and `muni_join_key`.
 
 ```r
 areas <- build_local_geography(state = "PA", geography = "county_subdivision")
@@ -177,4 +179,6 @@ Pick `geography` for the state: `county` is easy everywhere;
 New England; `place` covers incorporated places/CDPs but misses townships and
 many unincorporated areas; `tract` uses tract GEOIDs. For high-stakes,
 state-specific reporting where "municipality" has legal meaning, use an
-official state GIS layer and pass it directly.
+official state GIS layer and pass it directly. `Muni Key` is kept as a readable
+fallback, but production joins should prefer `muni_join_key`,
+`municipality_geoid`, or another official code from your boundary source.

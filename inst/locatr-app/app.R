@@ -84,6 +84,11 @@ guess_col <- function(cols, pattern, allow_none = FALSE) {
   if (allow_none) "" else cols[1]
 }
 
+pick_optional_col <- function(cols, pattern) {
+  hit <- cols[grepl(pattern, cols, ignore.case = TRUE)]
+  if (length(hit) > 0) hit[1] else NULL
+}
+
 # Run clean_addresses with column names supplied as strings.
 clean_with_strings <- function(data, id, address, city, zip, name, state) {
   args <- list(
@@ -121,13 +126,34 @@ attribute_join_geography <- function(geocoded, shapes, data_key, shp_key,
   county_col   <- nz_or_null(county_col)
   locality_col <- nz_or_null(locality_col)
   key_col      <- nz_or_null(key_col)
+  shape_cols   <- names(shapes)
+  statefp_col <- pick_optional_col(shape_cols, "^statefp$|state.*fips")
+  county_code_col <- pick_optional_col(shape_cols, "^county_code$|^countyfp$|cnty.*code")
+  county_fips_col <- pick_optional_col(shape_cols, "county.*fips|cnty.*fips")
+  muni_code_col <- pick_optional_col(
+    shape_cols,
+    "municipality.*code|mun.*code|muni.*code|cousubfp|placefp|tractce"
+  )
+  muni_geoid_col <- pick_optional_col(shape_cols, "municipality.*geoid|muni.*geoid|^geoid$|gnis")
+  muni_name_standard_col <- pick_optional_col(
+    shape_cols,
+    "municipality.*standard|namelsad|municipality.*name|mun.*name|location_locality"
+  )
+  muni_type_col <- pick_optional_col(shape_cols, "municipality.*type|^lsad$|^type$|classfp|mtfcc")
 
   attr_tbl <- sf::st_drop_geometry(shapes) %>%
     dplyr::transmute(
       .join_key         = as.character(.data[[shp_key]]),
+      .statefp          = if (!is.null(statefp_col)) as.character(.data[[statefp_col]]) else NA_character_,
       location_county   = if (!is.null(county_col)) as.character(.data[[county_col]]) else NA_character_,
       location_locality = if (!is.null(locality_col)) as.character(.data[[locality_col]]) else NA_character_,
-      muni_key          = if (!is.null(key_col)) as.character(.data[[key_col]]) else NA_character_
+      muni_join_key     = if (!is.null(key_col)) as.character(.data[[key_col]]) else NA_character_,
+      county_code       = if (!is.null(county_code_col)) as.character(.data[[county_code_col]]) else NA_character_,
+      county_fips       = if (!is.null(county_fips_col)) as.character(.data[[county_fips_col]]) else NA_character_,
+      municipality_code = if (!is.null(muni_code_col)) as.character(.data[[muni_code_col]]) else NA_character_,
+      municipality_geoid = if (!is.null(muni_geoid_col)) as.character(.data[[muni_geoid_col]]) else NA_character_,
+      municipality_name_standard = if (!is.null(muni_name_standard_col)) as.character(.data[[muni_name_standard_col]]) else NA_character_,
+      municipality_type = if (!is.null(muni_type_col)) as.character(.data[[muni_type_col]]) else NA_character_
     ) %>%
     dplyr::distinct(.join_key, .keep_all = TRUE)
 
@@ -141,9 +167,21 @@ attribute_join_geography <- function(geocoded, shapes, data_key, shp_key,
       ),
       County = .data$location_county,
       Municipality = .data$location_locality,
+      muni_join_key = dplyr::coalesce(
+        .data$muni_join_key, .data$municipality_geoid,
+        .data$municipality_code
+      ),
+      county_fips = dplyr::coalesce(
+        .data$county_fips,
+        dplyr::if_else(
+          !is.na(.data$.statefp) & !is.na(.data$county_code),
+          paste0(.data$.statefp, .data$county_code),
+          NA_character_
+        )
+      ),
       `Muni Key` = dplyr::if_else(
         .data$geography_match_status == "geography_matched",
-        dplyr::coalesce(.data$muni_key,
+        dplyr::coalesce(.data$muni_join_key,
                         paste(.data$location_county, .data$location_locality, sep = "::")),
         NA_character_
       ),
@@ -152,7 +190,7 @@ attribute_join_geography <- function(geocoded, shapes, data_key, shp_key,
         "muni_matched", "no_muni_match"
       )
     ) %>%
-    dplyr::select(-".join_key", -"muni_key")
+    dplyr::select(-".join_key", -".statefp")
 }
 
 `%||%` <- function(x, y) {

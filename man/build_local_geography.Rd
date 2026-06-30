@@ -32,17 +32,20 @@ build_local_geography(
 \item{...}{Passed through to the underlying \pkg{tigris} download function.}
 }
 \value{
-An \code{sf} polygon layer in WGS84 (EPSG:4326) with \code{location_county},
-\code{location_locality}, and \code{geometry}, ready for
+An \code{sf} polygon layer in WGS84 (EPSG:4326) with
+\code{location_county}, \code{location_locality}, stable join-code columns when
+available, and \code{geometry}, ready for
 \code{add_local_geography(geography_shapes = ...)}.
 }
 \description{
 Downloads an authoritative Census boundary layer for a state with the
 \pkg{tigris} package and standardises it into the two-column schema
 \code{\link[=add_local_geography]{add_local_geography()}} expects: \code{location_county} (always from counties) and
-\code{location_locality} (from the requested \code{geography}). This makes "locality" a
-configurable concept, because what counts as a municipality is not consistent
-across states.
+\code{location_locality} (from the requested \code{geography}). It also carries stable
+Census identifiers such as \code{county_fips}, \code{municipality_geoid}, and
+\code{muni_join_key} when those fields exist. This makes "locality" a configurable
+concept, because what counts as a municipality is not consistent across
+states.
 }
 \details{
 Choosing \code{geography}:

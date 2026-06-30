@@ -2,7 +2,7 @@
 % Please edit documentation in R/export-location-crosswalk.R
 \name{export_location_crosswalk}
 \alias{export_location_crosswalk}
-\title{Export the dashboard-ready location crosswalk}
+\title{Export the location crosswalk}
 \usage{
 export_location_crosswalk(data, path = NULL)
 }
@@ -15,8 +15,8 @@ export_location_crosswalk(data, path = NULL)
 The crosswalk tibble (also written to \code{path} when supplied).
 }
 \description{
-Selects the final, stable set of columns for Tableau (or any BI tool) and,
-optionally, writes them to CSV. Audit columns are retained so a reviewer can
-always see how each coordinate was produced, including score/type/status
-fields from the name lookup tier when available.
+Selects the final, stable set of columns for dashboards, GIS joins, and
+reusable reference tables, and optionally writes them to CSV. Audit columns
+are retained so a reviewer can always see how each coordinate was produced,
+including score/type/status fields from the name lookup tier when available.
 }

@@ -31,8 +31,9 @@ add_county_muni(
 \item{...}{Passed through to \code{\link[=build_local_geography]{build_local_geography()}}.}
 }
 \value{
-\code{data} with \code{County}, \code{Municipality}, \verb{Muni Key}, and
-\code{muni_match_status}, plus the generic \verb{location_*} geography audit fields.
+\code{data} with \code{County}, \code{Municipality}, \verb{Muni Key}, stable code/join
+columns when Census provides them, and \code{muni_match_status}, plus the
+generic \verb{location_*} geography audit fields.
 }
 \description{
 Convenience wrapper for the common workflow where users want county and

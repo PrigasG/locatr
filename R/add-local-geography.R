@@ -109,14 +109,16 @@ add_local_geography <- function(data, geography_shapes = NULL,
 
 #' Add county and municipality fields from boundary polygons
 #'
-#' A Tableau-oriented wrapper around [add_local_geography()] for workflows where
-#' the final crosswalk should carry explicit county and municipality columns.
-#' It spatially joins geocoded points to municipal/local boundary polygons and
-#' adds `County`, `Municipality`, `Muni Key`, and `muni_match_status`.
+#' A crosswalk-oriented wrapper around [add_local_geography()] for workflows
+#' where the final output should carry explicit county/municipality columns and
+#' stable join identifiers. It spatially joins geocoded points to
+#' municipal/local boundary polygons and adds `County`, `Municipality`,
+#' `Muni Key`, `muni_join_key`, code fields, and `muni_match_status`.
 #'
-#' `Muni Key` is copied from `key_col` when supplied. Otherwise it is built from
-#' `County` and `Municipality`, which is stable enough for review/export but not
-#' a substitute for an official municipal identifier when one exists.
+#' `muni_join_key` is copied from `key_col` when supplied, or auto-detected from
+#' common stable identifier columns such as `GEOID` and `MUNI_KEY`. `Muni Key`
+#' is retained as a readable key and falls back to `County::Municipality` when
+#' no official identifier exists.
 #'
 #' @param data A validated data frame with `latitude`/`longitude`.
 #' @param muni_shapes An `sf` polygon layer containing county and municipality
@@ -125,8 +127,10 @@ add_local_geography <- function(data, geography_shapes = NULL,
 #'   When `NULL`, common names are auto-detected.
 #' @param key_col Optional municipal key column in `muni_shapes`.
 #'
-#' @return `data` with `County`, `Municipality`, `Muni Key`, and
-#'   `muni_match_status`. The generic `location_county`,
+#' @return `data` with `County`, `Municipality`, `Muni Key`, `muni_join_key`,
+#'   `county_code`, `county_fips`, `municipality_code`,
+#'   `municipality_geoid`, `municipality_name_standard`, `municipality_type`,
+#'   and `muni_match_status` when available. The generic `location_county`,
 #'   `location_locality`, and `geography_match_status` columns are retained.
 #' @export
 add_muni_from_shapes <- function(data, muni_shapes,
@@ -152,8 +156,43 @@ add_muni_from_shapes <- function(data, muni_shapes,
   )
   key_col <- key_col %||% .pick_col(
     muni_shapes,
-    c("Muni Key", "MUNI_KEY", "MUNIKEY", "MUN_KEY", "MUN_CODE",
-      "MUNICIPALITY_CODE", "GEOID", "GNIS_ID")
+    c("muni_join_key", "Muni Key", "MUNI_KEY", "MUNIKEY", "MUN_KEY",
+      "MUN_CODE", "MUNICIPALITY_CODE", "municipality_geoid", "GEOID",
+      "GNIS_ID")
+  )
+  meta_cols <- list(
+    county_code = .pick_col(
+      muni_shapes,
+      c("county_code", "COUNTY_CODE", "COUNTYCODE", "COUNTYFP", "CNTY_CODE")
+    ),
+    county_fips = .pick_col(
+      muni_shapes,
+      c("county_fips", "COUNTY_FIPS", "COUNTYFIPS", "CNTY_FIPS")
+    ),
+    municipality_code = .pick_col(
+      muni_shapes,
+      c("municipality_code", "MUNICIPALITY_CODE", "MUN_CODE", "MUNCODE",
+        "MUN_KEY", "MUNI_CODE", "MUNICODE", "COUSUBFP", "PLACEFP",
+        "TRACTCE")
+    ),
+    municipality_geoid = .pick_col(
+      muni_shapes,
+      c("municipality_geoid", "MUNICIPALITY_GEOID", "MUNI_GEOID",
+        "GEOID", "GNIS_ID")
+    ),
+    municipality_name_standard = .pick_col(
+      muni_shapes,
+      c("municipality_name_standard", "MUNICIPALITY_NAME_STANDARD",
+        "NAMELSAD", "LSAD_NAME", "MUNICIPALITY_NAME", "MUN_NAME",
+        "location_locality")
+    ),
+    municipality_type = .pick_col(
+      muni_shapes,
+      c("municipality_type", "MUNICIPALITY_TYPE", "LSAD", "TYPE",
+        "CLASSFP", "MTFCC")
+    ),
+    muni_join_key = key_col,
+    .statefp = .pick_col(muni_shapes, c("STATEFP", "STATE_FIPS", "statefp"))
   )
 
   joined <- add_local_geography(
@@ -172,20 +211,39 @@ add_muni_from_shapes <- function(data, muni_shapes,
     TRUE ~ "no_muni_match"
   )
 
-  if (!is.null(key_col)) {
-    key_values <- .join_shape_key(joined, muni_shapes, key_col)
-    joined[["Muni Key"]] <- dplyr::if_else(
+  meta_values <- .join_shape_attrs(joined, muni_shapes, meta_cols)
+  for (col in names(meta_values)) {
+    joined[[col]] <- dplyr::if_else(
       joined$muni_match_status == "muni_matched",
-      key_values,
-      NA_character_
-    )
-  } else {
-    joined[["Muni Key"]] <- dplyr::if_else(
-      joined$muni_match_status == "muni_matched",
-      .make_muni_key(joined$County, joined$Municipality),
+      meta_values[[col]],
       NA_character_
     )
   }
+  for (col in names(meta_cols)) {
+    if (!col %in% names(joined)) {
+      joined[[col]] <- NA_character_
+    }
+  }
+  joined$muni_join_key <- dplyr::coalesce(
+    joined$muni_join_key,
+    joined$municipality_geoid,
+    joined$municipality_code
+  )
+  joined$county_fips <- dplyr::coalesce(
+    joined$county_fips,
+    dplyr::if_else(
+      !is.na(joined$.statefp) & !is.na(joined$county_code),
+      paste0(joined$.statefp, joined$county_code),
+      NA_character_
+    )
+  )
+  joined$.statefp <- NULL
+  joined[["Muni Key"]] <- dplyr::if_else(
+    joined$muni_match_status == "muni_matched",
+    dplyr::coalesce(joined$muni_join_key,
+                    .make_muni_key(joined$County, joined$Municipality)),
+    NA_character_
+  )
 
   joined
 }
@@ -209,8 +267,9 @@ add_muni_from_shapes <- function(data, muni_shapes,
 #' @param cb If `TRUE`, use smaller cartographic boundary files.
 #' @param ... Passed through to [build_local_geography()].
 #'
-#' @return `data` with `County`, `Municipality`, `Muni Key`, and
-#'   `muni_match_status`, plus the generic `location_*` geography audit fields.
+#' @return `data` with `County`, `Municipality`, `Muni Key`, stable code/join
+#'   columns when Census provides them, and `muni_match_status`, plus the
+#'   generic `location_*` geography audit fields.
 #' @export
 add_county_muni <- function(data,
                             state,
@@ -229,12 +288,21 @@ add_county_muni <- function(data,
     cb = cb,
     ...
   )
-  add_muni_from_shapes(data, muni_shapes = shapes)
+  add_muni_from_shapes(data, muni_shapes = shapes, key_col = "muni_join_key")
 }
 
-.join_shape_key <- function(data, shapes, key_col) {
+.join_shape_attrs <- function(data, shapes, cols) {
+  cols <- cols[!vapply(cols, is.null, logical(1))]
+  result <- as.data.frame(
+    stats::setNames(rep(list(rep(NA_character_, nrow(data))), length(cols)),
+                    names(cols)),
+    stringsAsFactors = FALSE
+  )
+  if (length(cols) == 0) {
+    return(result)
+  }
+
   has_xy <- !is.na(data$latitude) & !is.na(data$longitude)
-  result <- rep(NA_character_, nrow(data))
   if (!any(has_xy)) {
     return(result)
   }
@@ -247,19 +315,21 @@ add_county_muni <- function(data,
   ) %>%
     sf::st_transform(sf::st_crs(shapes))
 
-  keys <- shapes[, key_col, drop = FALSE]
-  joined <- sf::st_join(pts, keys, join = sf::st_intersects, left = TRUE) %>%
-    sf::st_drop_geometry() %>%
-    dplyr::group_by(.data$.locatr_row_id) %>%
-    dplyr::mutate(.match_count = sum(!is.na(.data[[key_col]]))) %>%
-    dplyr::slice(1L) %>%
-    dplyr::ungroup()
+  shape_cols <- unique(unlist(cols, use.names = FALSE))
+  attrs <- shapes[, shape_cols, drop = FALSE]
+  joined <- sf::st_join(pts, attrs, join = sf::st_intersects, left = TRUE) %>%
+    sf::st_drop_geometry()
 
-  result[has_xy] <- dplyr::if_else(
-    joined$.match_count == 1L,
-    as.character(joined[[key_col]]),
-    NA_character_
-  )
+  row_ids <- split(seq_len(nrow(joined)), joined$.locatr_row_id)
+  for (out_col in names(cols)) {
+    shape_col <- cols[[out_col]]
+    values <- vapply(seq_along(row_ids), function(i) {
+      idx <- row_ids[[i]]
+      unique_values <- unique(stats::na.omit(as.character(joined[[shape_col]][idx])))
+      if (length(unique_values) == 1) unique_values else NA_character_
+    }, character(1))
+    result[[out_col]][has_xy] <- values
+  }
   result
 }
 

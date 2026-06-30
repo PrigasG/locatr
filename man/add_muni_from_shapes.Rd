@@ -24,18 +24,22 @@ When \code{NULL}, common names are auto-detected.}
 \item{key_col}{Optional municipal key column in \code{muni_shapes}.}
 }
 \value{
-\code{data} with \code{County}, \code{Municipality}, \verb{Muni Key}, and
-\code{muni_match_status}. The generic \code{location_county},
+\code{data} with \code{County}, \code{Municipality}, \verb{Muni Key}, \code{muni_join_key},
+\code{county_code}, \code{county_fips}, \code{municipality_code},
+\code{municipality_geoid}, \code{municipality_name_standard}, \code{municipality_type},
+and \code{muni_match_status} when available. The generic \code{location_county},
 \code{location_locality}, and \code{geography_match_status} columns are retained.
 }
 \description{
-A Tableau-oriented wrapper around \code{\link[=add_local_geography]{add_local_geography()}} for workflows where
-the final crosswalk should carry explicit county and municipality columns.
-It spatially joins geocoded points to municipal/local boundary polygons and
-adds \code{County}, \code{Municipality}, \verb{Muni Key}, and \code{muni_match_status}.
+A crosswalk-oriented wrapper around \code{\link[=add_local_geography]{add_local_geography()}} for workflows
+where the final output should carry explicit county/municipality columns and
+stable join identifiers. It spatially joins geocoded points to
+municipal/local boundary polygons and adds \code{County}, \code{Municipality},
+\verb{Muni Key}, \code{muni_join_key}, code fields, and \code{muni_match_status}.
 }
 \details{
-\verb{Muni Key} is copied from \code{key_col} when supplied. Otherwise it is built from
-\code{County} and \code{Municipality}, which is stable enough for review/export but not
-a substitute for an official municipal identifier when one exists.
+\code{muni_join_key} is copied from \code{key_col} when supplied, or auto-detected from
+common stable identifier columns such as \code{GEOID} and \code{MUNI_KEY}. \verb{Muni Key}
+is retained as a readable key and falls back to \code{County::Municipality} when
+no official identifier exists.
 }
