@@ -35,7 +35,7 @@ stops with the install command you need.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+if (interactive()) {
 run_locatr_app()
-} # }
+}
 ```

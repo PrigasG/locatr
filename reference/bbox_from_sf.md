@@ -36,8 +36,8 @@ A named numeric vector with `lat_min`, `lat_max`, `lon_min`, and
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+if (interactive()) {
 areas <- build_local_geography("PA")
 bbox <- bbox_from_sf(areas)
-} # }
+}
 ```

@@ -84,8 +84,8 @@ that path works regardless, since the join accepts any polygon layer.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+if (interactive()) {
 areas <- build_local_geography(state = "PA", geography = "county_subdivision")
 final <- add_local_geography(geocoded, geography_shapes = areas)
-} # }
+}
 ```
