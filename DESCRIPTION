@@ -32,3 +32,5 @@ Suggests:
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 LazyData: true
+URL: https://github.com/PrigasG/locatr
+BugReports: https://github.com/PrigasG/locatr/issues
