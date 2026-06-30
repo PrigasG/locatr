@@ -1,16 +1,18 @@
-#' Fallback geocode pass via ArcGIS (Google-like fuzzy matching)
+#' ArcGIS address fallback pass (Google-like fuzzy matching)
 #'
 #' For rows the Census pass could not place inside the configured region,
-#' re-geocodes with
-#' a composite geocoder (default ArcGIS: free, no API key, fuzzy matching close
-#' to Google) using the single-line `full_address_clean`. ArcGIS requests are
-#' constrained to the region bbox when possible, and results are still guarded
-#' against the bounding box so out-of-region false matches are discarded before
-#' coordinates are coalesced back into `latitude`/`longitude`.
+#' re-geocodes with a composite geocoder (ArcGIS by default: free, no API key,
+#' fuzzy matching close to Google) using the single-line `full_address_clean`.
+#' ArcGIS requests are constrained to the region bbox when possible, and results
+#' are still guarded against the bounding box so out-of-region false matches are
+#' discarded before coordinates are coalesced back into `latitude`/`longitude`.
+#'
+#' Formerly `geocode_fallback()`; renamed because this tier is specifically the
+#' ArcGIS (composite) address pass.
 #'
 #' @param data A data frame from [geocode_census()] (or after
 #'   [validate_geocodes()]).
-#' @param method tidygeocoder method for the fallback (default `"arcgis"`).
+#' @param method tidygeocoder method for this pass (default `"arcgis"`).
 #'   `"google"` also works if `GOOGLEGEOCODE_API_KEY` is set.
 #' @param bbox Bounding box used to reject out-of-region matches; see
 #'   [region_bbox()].
@@ -18,10 +20,10 @@
 #'
 #' @return `data` with fallback columns `fb_latitude`, `fb_longitude`,
 #'   `fb_status`, and updated `latitude`, `longitude`, `geocode_method`,
-#'   `geocode_pass`, `match_status` for rows the fallback filled.
+#'   `geocode_pass`, `match_status` for rows this pass filled.
 #' @export
-geocode_fallback <- function(data, method = "arcgis",
-                             bbox = region_bbox("NJ"), ...) {
+geocode_arcgis <- function(data, method = "arcgis",
+                           bbox = region_bbox("NJ"), ...) {
   stopifnot(all(c("record_id", "latitude", "longitude") %in% names(data)))
   dots <- .region_geocoder_dots(method, bbox, list(...))
 

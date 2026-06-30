@@ -5,13 +5,21 @@
 #' auto-detected from common boundary schemas, or can be set explicitly.
 #'
 #' If `geography_shapes` is `NULL`, the function looks for a packaged
-#' `local_geography` dataset. Pass an `sf` polygon layer to adapt this join
-#' to another state, county, or service area.
+#' `local_geography` dataset (for production this is the NJGIN/NJOGIS municipal
+#' boundary layer built by `data-raw/local_geography.R`, whose attributes are
+#' already named `location_county`/`location_locality`). Pass an `sf` polygon
+#' layer to adapt this join to another state, county, or service area.
+#'
+#' For NJ production maps, `location_locality` is taken from an authoritative
+#' municipal boundary polygon - not from the geocoder response or Census
+#' reverse-geocoding, whose "county subdivision" names only look municipal - so
+#' every locality is traceable to a named boundary source.
 #'
 #' @param data A validated data frame with `latitude`/`longitude`.
 #' @param geography_shapes An `sf` polygon layer, or `NULL` to use packaged data.
 #' @param county_col,locality_col Optional explicit column names in `geography_shapes`.
-#'   When `NULL`, [add_local_geography()] guesses from common names.
+#'   When `NULL`, [add_local_geography()] guesses from common names, preferring
+#'   `location_county`/`location_locality` when present.
 #'
 #' @return `data` with `location_county`, `location_locality`, and
 #'   `geography_match_status`. Rows without usable coordinates are kept (audit-safe)
@@ -31,11 +39,13 @@ add_local_geography <- function(data, geography_shapes = NULL,
 
   if (is.null(county_col)) {
     county_col <- .pick_col(geography_shapes,
-      c("COUNTY", "COUNTY_NAME", "COUNTY_NAM", "COUNTYNAME", "CNTYNAME"))
+      c("location_county", "COUNTY", "COUNTY_NAME", "COUNTY_NAM",
+        "COUNTYNAME", "CNTYNAME"))
   }
   if (is.null(locality_col)) {
     locality_col <- .pick_col(geography_shapes,
-      c("MUN_NAME", "MUN", "MUNICIPALITY", "MUNICIPALITY_NAME", "NAME", "GNIS_NAME"))
+      c("location_locality", "MUN_NAME", "MUN", "MUNICIPALITY",
+        "MUNICIPALITY_NAME", "NAME", "GNIS_NAME"))
   }
 
   has_xy <- !is.na(data$latitude) & !is.na(data$longitude)
@@ -48,8 +58,11 @@ add_local_geography <- function(data, geography_shapes = NULL,
     return(dplyr::bind_rows(no_point))
   }
 
+  point_data <- data[has_xy, , drop = FALSE]
+  point_data$.locatr_row_id <- seq_len(nrow(point_data))
+
   pts <- sf::st_as_sf(
-    data[has_xy, , drop = FALSE],
+    point_data,
     coords = c("longitude", "latitude"), crs = 4326, remove = FALSE
   ) %>%
     sf::st_transform(sf::st_crs(geography_shapes))
@@ -66,11 +79,23 @@ add_local_geography <- function(data, geography_shapes = NULL,
   } else NA_character_
 
   joined <- joined %>%
+    dplyr::group_by(.data$.locatr_row_id) %>%
     dplyr::mutate(
-      geography_match_status = dplyr::if_else(
-        is.na(.data$location_locality),
-        "no_geography_match", "geography_matched"
-      )
+      .match_count = sum(!is.na(.data$location_county) |
+                           !is.na(.data$location_locality))
+    ) %>%
+    dplyr::slice(1L) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(
+      geography_match_status = dplyr::case_when(
+        .data$.match_count == 0L ~ "no_geography_match",
+        .data$.match_count > 1L ~ "ambiguous_geography_match",
+        TRUE ~ "geography_matched"
+      ),
+      location_county = dplyr::if_else(.data$.match_count > 1L,
+                                       NA_character_, .data$location_county),
+      location_locality = dplyr::if_else(.data$.match_count > 1L,
+                                         NA_character_, .data$location_locality)
     ) %>%
     # keep only the original columns plus the three new ones, so the shapefile's
     # other attributes don't leak into the crosswalk

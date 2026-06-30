@@ -70,10 +70,11 @@ clean_addresses <- function(data, id, address, city, zip,
         stringr::str_to_upper() %>%
         stringr::str_squish(),
 
-      zip_clean = stringr::str_pad(
-        stringr::str_extract(.data$zip_raw, "\\d{5}"),
-        width = 5, side = "left", pad = "0"
-      ),
+      zip_clean = .data$zip_raw %>%
+        stringr::str_remove_all("\\D") %>%
+        stringr::str_sub(1, 5) %>%
+        stringr::str_pad(width = 5, side = "left", pad = "0") %>%
+        dplyr::na_if("00000"),
 
       full_address_clean = paste0(
         .data$address_clean, ", ",

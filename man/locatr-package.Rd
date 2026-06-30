@@ -6,10 +6,20 @@
 \alias{locatr-package}
 \title{locatr: Audit-Ready Geocoding and Local Geography Crosswalks for Messy Location Data}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 A thin audit, validation, fallback, and crosswalk layer that sits on top of 'tidygeocoder'. It cleans and flags messy location addresses, geocodes them via the US Census batch geocoder with an ArcGIS fallback, validates the returned coordinates against a configurable bounding box (and optionally a true boundary polygon), joins points to local geography with 'sf', supports manual overrides, and exports a dashboard-ready crosswalk. Every step records an audit trail so a reviewer can see how each coordinate was produced.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/PrigasG/locatr}
+  \item Report bugs at \url{https://github.com/PrigasG/locatr/issues}
+}
+
+}
 \author{
-\strong{Maintainer}: Prigas G \email{you@example.com}
+\strong{Maintainer}: George Arthur \email{prigasgenthian48@gmail.com} (\href{https://orcid.org/0000-0002-1975-1459}{ORCID})
 
 }
 \keyword{internal}

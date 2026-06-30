@@ -10,6 +10,8 @@ geocode_records(
   reference = NULL,
   boundary = NULL,
   bbox = region_bbox("NJ"),
+  name_min_score = 90,
+  name_accept_types = c("PointAddress", "Subaddress", "StreetAddress"),
   verbose = TRUE
 )
 }
@@ -27,6 +29,12 @@ names, call \code{\link[=backfill_from_reference]{backfill_from_reference()}} yo
 passed to \code{\link[=validate_geocodes]{validate_geocodes()}}. \code{NULL} uses the bounding box.}
 
 \item{bbox}{Bounding box for region guards; see \code{\link[=region_bbox]{region_bbox()}}.}
+
+\item{name_min_score}{Minimum ArcGIS score for a name lookup to pass without
+review. Passed to \code{\link[=geocode_by_name]{geocode_by_name()}}.}
+
+\item{name_accept_types}{ArcGIS address types precise enough for a name lookup
+to pass without review. Passed to \code{\link[=geocode_by_name]{geocode_by_name()}}.}
 
 \item{verbose}{Whether to print a per-tier match tally.}
 }

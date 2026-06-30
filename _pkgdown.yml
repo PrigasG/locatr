@@ -1,0 +1,50 @@
+url: https://prigasg.github.io/locatr/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+  light-switch: true
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+
+home:
+  title: locatr
+  description: Audit-ready geocoding and local geography crosswalks for messy location data.
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+
+reference:
+  - title: Clean and flag
+    contents:
+      - clean_addresses
+      - flag_bad_addresses
+  - title: Geocode and validate
+    contents:
+      - geocode_records
+      - geocode_census
+      - geocode_arcgis
+      - geocode_by_name
+      - validate_geocodes
+      - region_bbox
+      - bbox_from_sf
+      - in_bbox
+  - title: Geography and export
+    contents:
+      - build_local_geography
+      - add_local_geography
+      - backfill_from_reference
+      - write_geocode_review
+      - apply_manual_overrides
+      - export_location_crosswalk
+  - title: App
+    contents:
+      - run_locatr_app
+
+articles:
+  - title: Workflows
+    navbar: Workflows
+    contents:
+      - location-geocoding

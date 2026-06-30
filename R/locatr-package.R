@@ -15,14 +15,16 @@ utils::globalVariables(c(
   "address_clean", "city_clean", "state_clean", "zip_clean",
   "full_address_clean", "record_id", "record_name",
   "latitude", "longitude", "fb_latitude", "fb_longitude",
+  "fb_in_bbox", "fb_status", "use_fb",
   "name_query", "nm_latitude", "nm_longitude", "nm_in_bbox", "nm_status",
+  "nm_score", "nm_addr_type", "nm_scored", "nm_high_conf", "nm_low", "use_nm",
   "ref_latitude", "ref_longitude", "ref_in_bbox", "ref_status",
   "ref_county", "ref_locality", "use_ref", ".ref_key",
   ".retryable_for_geocoding",
   "bad_address_flag", "review_status", "match_status",
   "validation_status", "geocode_method", "geocode_pass",
   "location_county", "location_locality", "geography_match_status",
-  "in_bbox", "tiger_line_id"
+  ".locatr_row_id", ".match_count", "in_bbox", "tiger_line_id", "."
 ))
 
 #' Region bounding box
@@ -72,6 +74,43 @@ in_bbox <- function(lat, lon, bbox) {
   !is.na(lat) & !is.na(lon) &
     lat >= bbox[["lat_min"]] & lat <= bbox[["lat_max"]] &
     lon >= bbox[["lon_min"]] & lon <= bbox[["lon_max"]]
+}
+
+#' Build a geocoding bounding box from an sf layer
+#'
+#' Converts any point, line, or polygon `sf` layer to WGS84 and returns a named
+#' latitude/longitude bounding box suitable for [geocode_records()],
+#' [geocode_arcgis()], [geocode_by_name()], and [validate_geocodes()]. This is
+#' the safest way to keep multi-state geocoding and local geography joins aligned:
+#' build or load the geography layer first, then derive the bbox from it.
+#'
+#' @param geography_shapes An `sf` object.
+#' @param buffer Numeric buffer in decimal degrees added to each side of the
+#'   bounding box. Defaults to `0.05` to avoid rejecting edge locations.
+#'
+#' @return A named numeric vector with `lat_min`, `lat_max`, `lon_min`, and
+#'   `lon_max`.
+#' @export
+#' @examples
+#' \dontrun{
+#' areas <- build_local_geography("PA")
+#' bbox <- bbox_from_sf(areas)
+#' }
+bbox_from_sf <- function(geography_shapes, buffer = 0.05) {
+  if (!inherits(geography_shapes, "sf") && !inherits(geography_shapes, "sfc")) {
+    stop("`geography_shapes` must be an sf or sfc object.", call. = FALSE)
+  }
+  shapes <- geography_shapes
+  if (!is.na(sf::st_crs(shapes))) {
+    shapes <- sf::st_transform(shapes, 4326)
+  }
+  bb <- sf::st_bbox(shapes)
+  c(
+    lat_min = unname(bb[["ymin"]] - buffer),
+    lat_max = unname(bb[["ymax"]] + buffer),
+    lon_min = unname(bb[["xmin"]] - buffer),
+    lon_max = unname(bb[["xmax"]] + buffer)
+  )
 }
 
 # Rows that began with a usable address may be retried by looser geocoders after

@@ -25,6 +25,10 @@
 #' @param boundary Optional `sf` boundary for polygon-precise validation;
 #'   passed to [validate_geocodes()]. `NULL` uses the bounding box.
 #' @param bbox Bounding box for region guards; see [region_bbox()].
+#' @param name_min_score Minimum ArcGIS score for a name lookup to pass without
+#'   review. Passed to [geocode_by_name()].
+#' @param name_accept_types ArcGIS address types precise enough for a name lookup
+#'   to pass without review. Passed to [geocode_by_name()].
 #' @param verbose Whether to print a per-tier match tally.
 #'
 #' @return `data` with coordinates and the full audit trail populated.
@@ -34,6 +38,9 @@ geocode_records <- function(data,
                                reference = NULL,
                                boundary = NULL,
                                bbox = region_bbox("NJ"),
+                               name_min_score = 90,
+                               name_accept_types = c("PointAddress", "Subaddress",
+                                                     "StreetAddress"),
                                verbose = TRUE) {
   stopifnot("review_status" %in% names(data))
   tiers <- match.arg(tiers, choices = c("census", "arcgis", "name"),
@@ -60,14 +67,16 @@ geocode_records <- function(data,
 
   if ("arcgis" %in% tiers) {
     say("Tier 2 - ArcGIS address fallback ...")
-    out <- geocode_fallback(out, method = "arcgis", bbox = bbox)
+    out <- geocode_arcgis(out, method = "arcgis", bbox = bbox)
     out <- validate_geocodes(out, boundary = boundary, bbox = bbox)
     say("  placed in region so far: ", .n_in_region(out, bbox))
   }
 
   if ("name" %in% tiers) {
     say("Tier 3 - name lookup fallback ...")
-    out <- geocode_by_name(out, method = "arcgis", bbox = bbox)
+    out <- geocode_by_name(out, method = "arcgis", bbox = bbox,
+                           min_score = name_min_score,
+                           accept_types = name_accept_types)
     out <- validate_geocodes(out, boundary = boundary, bbox = bbox)
     say("  placed in region so far: ", .n_in_region(out, bbox))
   }

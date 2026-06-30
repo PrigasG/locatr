@@ -17,7 +17,8 @@ add_local_geography(
 \item{geography_shapes}{An \code{sf} polygon layer, or \code{NULL} to use packaged data.}
 
 \item{county_col, locality_col}{Optional explicit column names in \code{geography_shapes}.
-When \code{NULL}, \code{\link[=add_local_geography]{add_local_geography()}} guesses from common names.}
+When \code{NULL}, \code{\link[=add_local_geography]{add_local_geography()}} guesses from common names, preferring
+\code{location_county}/\code{location_locality} when present.}
 }
 \value{
 \code{data} with \code{location_county}, \code{location_locality}, and
@@ -31,6 +32,13 @@ auto-detected from common boundary schemas, or can be set explicitly.
 }
 \details{
 If \code{geography_shapes} is \code{NULL}, the function looks for a packaged
-\code{local_geography} dataset. Pass an \code{sf} polygon layer to adapt this join
-to another state, county, or service area.
+\code{local_geography} dataset (for production this is the NJGIN/NJOGIS municipal
+boundary layer built by \code{data-raw/local_geography.R}, whose attributes are
+already named \code{location_county}/\code{location_locality}). Pass an \code{sf} polygon
+layer to adapt this join to another state, county, or service area.
+
+For NJ production maps, \code{location_locality} is taken from an authoritative
+municipal boundary polygon - not from the geocoder response or Census
+reverse-geocoding, whose "county subdivision" names only look municipal - so
+every locality is traceable to a named boundary source.
 }

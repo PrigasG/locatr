@@ -1,5 +1,11 @@
 ^data-raw$
 ^analysis$
+^huggingface$
+^docs$
+^pkgdown$
+^_pkgdown\.yml$
+^\.github$
+^\.git$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$

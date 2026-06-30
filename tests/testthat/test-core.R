@@ -92,7 +92,7 @@ test_that("address fallback is a no-op for pre-flagged manual review rows", {
     geocode_pass = NA_character_,
     match_status = NA_character_
   )
-  out <- geocode_fallback(df)
+  out <- geocode_arcgis(df)
 
   expect_true(all(c("fb_latitude", "fb_longitude", "fb_status") %in% names(out)))
   expect_true(is.na(out$fb_status))
@@ -119,7 +119,7 @@ test_that("geocode_census fills coordinates and audit columns (mocked)", {
   expect_equal(out$match_status, "matched")
 })
 
-test_that("geocode_fallback fills gap rows in region (mocked)", {
+test_that("geocode_arcgis fills gap rows in region (mocked)", {
   testthat::local_mocked_bindings(
     geocode = function(.tbl, ...) {
       dplyr::mutate(.tbl, fb_latitude = 40.30, fb_longitude = -74.60)
@@ -134,14 +134,14 @@ test_that("geocode_fallback fills gap rows in region (mocked)", {
     geocode_method = NA_character_, geocode_pass = NA_character_,
     match_status = NA_character_
   )
-  out <- geocode_fallback(df)
+  out <- geocode_arcgis(df)
 
   expect_equal(out$latitude, 40.30)
   expect_equal(out$geocode_pass, "pass_2_fallback")
   expect_equal(out$fb_status, "fallback_matched")
 })
 
-test_that("geocode_fallback rejects an out-of-region match (mocked)", {
+test_that("geocode_arcgis rejects an out-of-region match (mocked)", {
   testthat::local_mocked_bindings(
     geocode = function(.tbl, ...) {
       dplyr::mutate(.tbl, fb_latitude = 40.50, fb_longitude = -104.90) # Colorado
@@ -156,7 +156,7 @@ test_that("geocode_fallback rejects an out-of-region match (mocked)", {
     geocode_method = NA_character_, geocode_pass = NA_character_,
     match_status = NA_character_
   )
-  out <- geocode_fallback(df)
+  out <- geocode_arcgis(df)
 
   expect_true(is.na(out$latitude))
   expect_equal(out$fb_status, "fallback_outside_region_rejected")
@@ -182,6 +182,56 @@ test_that("geocode_by_name fills unplaced rows in region (mocked)", {
   expect_equal(out$latitude, 40.30)
   expect_equal(out$geocode_pass, "pass_4_name_lookup")
   expect_equal(out$nm_status, "name_matched")
+})
+
+test_that("geocode_by_name passes a high-confidence point address (mocked)", {
+  testthat::local_mocked_bindings(
+    geocode = function(.tbl, ...) {
+      dplyr::mutate(.tbl, nm_latitude = 40.30, nm_longitude = -74.60,
+                    score = 99, addr_type = "PointAddress")
+    },
+    .package = "tidygeocoder"
+  )
+  df <- tibble::tibble(
+    record_id = "a", record_name = "Some Hospital",
+    city_clean = "TRENTON", state_clean = "NJ",
+    review_status = "ready_for_geocoding", bad_address_flag = NA_character_,
+    latitude = NA_real_, longitude = NA_real_,
+    geocode_method = NA_character_, geocode_pass = NA_character_,
+    match_status = NA_character_
+  )
+  out <- geocode_by_name(df)
+
+  expect_equal(out$nm_status, "name_matched_high_confidence")
+  expect_equal(out$match_status, "matched")
+  expect_equal(out$latitude, 40.30)
+  expect_equal(out$nm_score, 99)
+  expect_equal(out$review_status, "ready_for_geocoding") # not sent to review
+})
+
+test_that("geocode_by_name routes a fuzzy POI/low-score hit to review (mocked)", {
+  testthat::local_mocked_bindings(
+    geocode = function(.tbl, ...) {
+      dplyr::mutate(.tbl, nm_latitude = 40.30, nm_longitude = -74.60,
+                    score = 80, addr_type = "POI")
+    },
+    .package = "tidygeocoder"
+  )
+  df <- tibble::tibble(
+    record_id = "a", record_name = "Some Hospital",
+    city_clean = "TRENTON", state_clean = "NJ",
+    review_status = "ready_for_geocoding", bad_address_flag = NA_character_,
+    latitude = NA_real_, longitude = NA_real_,
+    geocode_method = NA_character_, geocode_pass = NA_character_,
+    match_status = NA_character_
+  )
+  out <- geocode_by_name(df)
+
+  expect_equal(out$nm_status, "name_matched_low_confidence")
+  expect_equal(out$match_status, "matched_low_confidence")
+  expect_equal(out$latitude, 40.30)              # coords kept for the reviewer
+  expect_equal(out$geocode_pass, "pass_4_name_lookup")
+  expect_equal(out$review_status, "needs_manual_review")
 })
 
 # ---- Tier 0 reference backfill ----------------------------------------------
@@ -239,4 +289,170 @@ test_that("census does not clobber Tier 0 coords when no rows are ready", {
 
   expect_equal(out$latitude, 40.22)
   expect_equal(out$geocode_pass, "pass_0_reference")
+})
+
+test_that("export_location_crosswalk keeps name match audit columns", {
+  df <- tibble::tibble(
+    record_id = "a",
+    record_name = "Some Site",
+    address_clean = "1 MAIN STREET",
+    city_clean = "TRENTON",
+    state_clean = "NJ",
+    zip_clean = "08608",
+    full_address_clean = "1 MAIN STREET, TRENTON, NJ 08608",
+    latitude = 40.2,
+    longitude = -74.7,
+    geocode_method = "arcgis_byname",
+    geocode_pass = "pass_4_name_lookup",
+    match_status = "matched_low_confidence",
+    nm_score = 80,
+    nm_addr_type = "POI",
+    nm_status = "name_matched_low_confidence",
+    review_status = "needs_manual_review"
+  )
+
+  out <- export_location_crosswalk(df)
+
+  expect_equal(out$name_match_score, 80)
+  expect_equal(out$name_match_type, "POI")
+  expect_equal(out$name_match_status, "name_matched_low_confidence")
+})
+
+# ---- build_local_geography (tigris mocked) ----------------------------------
+
+# Small helper: a rectangular polygon as an sfc in NAD83 (what tigris returns).
+.test_poly <- function(xmin, ymin, xmax, ymax) {
+  sf::st_sfc(
+    sf::st_polygon(list(matrix(
+      c(xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax, xmin, ymin),
+      ncol = 2, byrow = TRUE
+    ))),
+    crs = 4269
+  )
+}
+
+test_that("build_local_geography standardises county_subdivision schema (mocked)", {
+  skip_if_not_installed("tigris")
+
+  fake_counties <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "Mercer",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+  fake_subs <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "Trenton",
+    geometry = .test_poly(-74.8, 40.1, -74.6, 40.3)
+  )
+  testthat::local_mocked_bindings(
+    counties = function(...) fake_counties,
+    county_subdivisions = function(...) fake_subs,
+    .package = "tigris"
+  )
+
+  areas <- build_local_geography(state = "NJ", geography = "county_subdivision")
+
+  expect_s3_class(areas, "sf")
+  expect_true(all(c("location_county", "location_locality") %in% names(areas)))
+  expect_equal(areas$location_county, "Mercer")
+  expect_equal(areas$location_locality, "Trenton")
+  expect_equal(sf::st_crs(areas)$epsg, 4326L)
+})
+
+test_that("build_local_geography 'county' sets locality to the county (mocked)", {
+  skip_if_not_installed("tigris")
+
+  fake_counties <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "Mercer",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+  testthat::local_mocked_bindings(
+    counties = function(...) fake_counties,
+    .package = "tigris"
+  )
+
+  areas <- build_local_geography(state = "NJ", geography = "county")
+
+  expect_equal(areas$location_county, "Mercer")
+  expect_equal(areas$location_locality, "Mercer")
+})
+
+test_that("bbox_from_sf returns a padded WGS84 bbox", {
+  areas <- sf::st_sf(
+    location_county = "Mercer",
+    location_locality = "Trenton",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+
+  bbox <- bbox_from_sf(areas, buffer = 0.1)
+
+  expect_equal(bbox[["lat_min"]], 39.9)
+  expect_equal(bbox[["lat_max"]], 41.1)
+  expect_equal(bbox[["lon_min"]], -75.1)
+  expect_equal(bbox[["lon_max"]], -73.9)
+})
+
+test_that("add_local_geography flags ambiguous overlapping geography without duplicating rows", {
+  shapes <- sf::st_sf(
+    location_county = c("County A", "County B"),
+    location_locality = c("Area A", "Area B"),
+    geometry = c(.test_poly(-75, 40, -74, 41), .test_poly(-74.8, 40.2, -73.8, 41.2))
+  )
+  points <- tibble::tibble(
+    record_id = "a",
+    latitude = 40.5,
+    longitude = -74.5
+  )
+
+  out <- add_local_geography(points, geography_shapes = shapes)
+
+  expect_equal(nrow(out), 1)
+  expect_equal(out$geography_match_status, "ambiguous_geography_match")
+  expect_true(is.na(out$location_county))
+  expect_true(is.na(out$location_locality))
+})
+
+test_that("build_local_geography uses tract GEOID as locality when available (mocked)", {
+  skip_if_not_installed("tigris")
+
+  fake_counties <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "Mercer",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+  fake_tracts <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "1.01", GEOID = "34021000101",
+    geometry = .test_poly(-74.8, 40.1, -74.6, 40.3)
+  )
+  testthat::local_mocked_bindings(
+    counties = function(...) fake_counties,
+    tracts = function(...) fake_tracts,
+    .package = "tigris"
+  )
+
+  areas <- build_local_geography(state = "NJ", geography = "tract")
+
+  expect_equal(areas$location_county, "Mercer")
+  expect_equal(areas$location_locality, "34021000101")
+})
+
+test_that("build_local_geography standardises place schema (mocked)", {
+  skip_if_not_installed("tigris")
+
+  fake_counties <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "Mercer",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+  fake_places <- sf::st_sf(
+    STATEFP = "34", NAME = "Trenton",
+    geometry = .test_poly(-74.9, 40.1, -74.5, 40.4)
+  )
+  testthat::local_mocked_bindings(
+    counties = function(...) fake_counties,
+    places = function(...) fake_places,
+    .package = "tigris"
+  )
+
+  areas <- build_local_geography(state = "NJ", geography = "place")
+
+  expect_equal(areas$location_county, "Mercer")
+  expect_equal(areas$location_locality, "Trenton")
+  expect_equal(sf::st_crs(areas)$epsg, 4326L)
 })

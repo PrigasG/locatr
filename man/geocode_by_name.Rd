@@ -4,7 +4,14 @@
 \alias{geocode_by_name}
 \title{Name-based geocode pass (the "paste it in a browser" tier)}
 \usage{
-geocode_by_name(data, method = "arcgis", bbox = region_bbox("NJ"), ...)
+geocode_by_name(
+  data,
+  method = "arcgis",
+  bbox = region_bbox("NJ"),
+  min_score = 90,
+  accept_types = c("PointAddress", "Subaddress", "StreetAddress"),
+  ...
+)
 }
 \arguments{
 \item{data}{A data frame carrying \code{record_id}, \code{record_name},
@@ -16,13 +23,23 @@ geocode_by_name(data, method = "arcgis", bbox = region_bbox("NJ"), ...)
 \item{bbox}{Bounding box used to reject out-of-region matches; see
 \code{\link[=region_bbox]{region_bbox()}}.}
 
-\item{...}{Passed through to \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}} (e.g.
-\code{full_results = TRUE} to inspect the ArcGIS match \code{score}).}
+\item{min_score}{Minimum match score (0-100) for a name hit to pass without
+review. Hits below this stay reviewable. Default \code{90}.}
+
+\item{accept_types}{Address types precise enough to pass without review
+(matched case-insensitively against the geocoder's \code{addr_type}). Default the
+point-address types \code{c("PointAddress", "Subaddress", "StreetAddress")}.}
+
+\item{...}{Passed through to \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}}. \code{full_results = TRUE}
+is requested automatically so scores are available; pass
+\code{full_results = FALSE} to opt out (which also disables score gating).}
 }
 \value{
-\code{data} with name-lookup columns \code{nm_latitude}, \code{nm_longitude},
-\code{nm_status}, and updated \code{latitude}/\code{longitude}/\code{geocode_method}/
-\code{geocode_pass}/\code{match_status} for rows the name pass filled.
+\code{data} with name-lookup audit columns \code{nm_latitude}, \code{nm_longitude},
+\code{nm_score}, \code{nm_addr_type}, \code{nm_status}, and updated
+\code{latitude}/\code{longitude}/\code{geocode_method}/\code{geocode_pass}/\code{match_status} for
+rows the name pass filled. Low-confidence fills also set
+\code{review_status == "needs_manual_review"}.
 }
 \description{
 For rows still unplaced after the address-based passes, geocodes by record
@@ -31,8 +48,18 @@ campus/landmark addresses (e.g. a unit inside a hospital) that street-range
 interpolation cannot, because a composite geocoder recognises the named place.
 }
 \details{
-Because name matching is looser than address matching, filled rows are tagged
-\code{geocode_pass == "pass_4_name_lookup"} so a reviewer can spot-check them. The
-bounding box still rejects out-of-region hits, but cannot catch a wrong
-same-state match, so treat these as lower-confidence by design.
+Because name lookups are looser than address matching, each hit is scored
+using the geocoder's match \code{score} and address type (when available - ArcGIS
+returns both via \code{full_results}, which this pass requests automatically). A
+hit passes cleanly only when it resolves to a precise point address at or
+above \code{min_score}; fuzzier hits (a POI, a locality centroid, or a low score)
+still have their coordinates filled in for context but are marked
+\code{match_status == "matched_low_confidence"} and routed to
+\code{needs_manual_review} so a person can confirm them. When the geocoder returns
+no score/type information (e.g. \code{method = "osm"}), the pass falls back to the
+previous rule: any in-region match is accepted.
+
+Filled rows are tagged \code{geocode_pass == "pass_4_name_lookup"}. The bounding box
+still rejects out-of-region hits, but cannot catch a wrong same-state match,
+which is exactly what the score gate is for.
 }

@@ -2,7 +2,8 @@ Package: locatr
 Title: Audit-Ready Geocoding and Local Geography Crosswalks for Messy Location Data
 Version: 0.1.0
 Authors@R:
-    person("Prigas", "G", email = "you@example.com", role = c("aut", "cre"))
+    person("George", "Arthur", , "prigasgenthian48@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-1975-1459"))
 Description: A thin audit, validation, fallback, and crosswalk layer that sits on
     top of 'tidygeocoder'. It cleans and flags messy location addresses, geocodes
     them via the US Census batch geocoder with an ArcGIS fallback, validates the
@@ -23,14 +24,23 @@ Imports:
     rlang (>= 1.1.0),
     sf,
     stringr,
-    tibble,
     tidygeocoder
 Suggests:
     testthat (>= 3.1.7),
     knitr,
-    rmarkdown
+    rmarkdown,
+    tigris,
+    pkgdown,
+    shiny,
+    bslib,
+    DT,
+    leaflet,
+    readxl,
+    writexl,
+    arrow,
+    tibble
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 LazyData: true
-URL: https://github.com/PrigasG/locatr
+URL: https://prigasg.github.io/locatr/, https://github.com/PrigasG/locatr
 BugReports: https://github.com/PrigasG/locatr/issues

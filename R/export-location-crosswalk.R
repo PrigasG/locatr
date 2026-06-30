@@ -2,7 +2,8 @@
 #'
 #' Selects the final, stable set of columns for Tableau (or any BI tool) and,
 #' optionally, writes them to CSV. Audit columns are retained so a reviewer can
-#' always see how each coordinate was produced.
+#' always see how each coordinate was produced, including score/type/status
+#' fields from the name lookup tier when available.
 #'
 #' @param data A fully processed data frame.
 #' @param path Optional output CSV path. When `NULL`, nothing is written.
@@ -26,6 +27,9 @@ export_location_crosswalk <- function(data, path = NULL) {
       geocode_method        = .data$geocode_method,
       geocode_pass          = .data$geocode_pass,
       match_status          = .data$match_status,
+      name_match_score      = .pull_if(data, "nm_score"),
+      name_match_type       = .pull_if(data, "nm_addr_type"),
+      name_match_status     = .pull_if(data, "nm_status"),
       validation_status     = .pull_if(data, "validation_status"),
       geography_match_status = .pull_if(data, "geography_match_status"),
       manual_override_used  = .pull_if(data, "manual_override_used"),

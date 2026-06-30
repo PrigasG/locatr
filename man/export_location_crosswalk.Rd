@@ -17,5 +17,6 @@ The crosswalk tibble (also written to \code{path} when supplied).
 \description{
 Selects the final, stable set of columns for Tableau (or any BI tool) and,
 optionally, writes them to CSV. Audit columns are retained so a reviewer can
-always see how each coordinate was produced.
+always see how each coordinate was produced, including score/type/status
+fields from the name lookup tier when available.
 }
