@@ -24,7 +24,7 @@ the safest way to keep multi-state geocoding and local geography joins aligned:
 build or load the geography layer first, then derive the bbox from it.
 }
 \examples{
-\dontrun{
+if (interactive()) {
 areas <- build_local_geography("PA")
 bbox <- bbox_from_sf(areas)
 }

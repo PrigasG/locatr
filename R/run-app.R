@@ -17,7 +17,7 @@
 #' @return Called for its side effect of starting the app; does not return.
 #' @export
 #' @examples
-#' \dontrun{
+#' if (interactive()) {
 #' run_locatr_app()
 #' }
 run_locatr_app <- function(...) {

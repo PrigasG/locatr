@@ -92,7 +92,7 @@ in_bbox <- function(lat, lon, bbox) {
 #'   `lon_max`.
 #' @export
 #' @examples
-#' \dontrun{
+#' if (interactive()) {
 #' areas <- build_local_geography("PA")
 #' bbox <- bbox_from_sf(areas)
 #' }

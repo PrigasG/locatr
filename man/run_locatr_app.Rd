@@ -27,7 +27,7 @@ are not installed automatically. If any are missing, this function stops with
 the install command you need.
 }
 \examples{
-\dontrun{
+if (interactive()) {
 run_locatr_app()
 }
 }

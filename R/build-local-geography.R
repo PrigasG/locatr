@@ -42,7 +42,7 @@
 #'   `add_local_geography(geography_shapes = ...)`.
 #' @export
 #' @examples
-#' \dontrun{
+#' if (interactive()) {
 #' areas <- build_local_geography(state = "PA", geography = "county_subdivision")
 #' final <- add_local_geography(geocoded, geography_shapes = areas)
 #' }

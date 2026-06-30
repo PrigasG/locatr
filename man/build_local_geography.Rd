@@ -66,7 +66,7 @@ official state GIS layer and pass it straight to \code{\link[=add_local_geograph
 that path works regardless, since the join accepts any polygon layer.
 }
 \examples{
-\dontrun{
+if (interactive()) {
 areas <- build_local_geography(state = "PA", geography = "county_subdivision")
 final <- add_local_geography(geocoded, geography_shapes = areas)
 }
