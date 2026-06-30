@@ -1,16 +1,16 @@
 Package: locatr
-Title: Audit-Ready Geocoding and Local Geography Crosswalks for Messy Location Data
+Title: Audit-Ready Geocoding and Local Geography for Messy Location Data
 Version: 0.1.0
 Authors@R:
     person("George", "Arthur", , "prigasgenthian48@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1975-1459"))
-Description: A thin audit, validation, fallback, and crosswalk layer that sits on
-    top of 'tidygeocoder'. It cleans and flags messy location addresses, geocodes
-    them via the US Census batch geocoder with an ArcGIS fallback, validates the
-    returned coordinates against a configurable bounding box (and optionally a
-    true boundary polygon), joins points to local geography with 'sf', supports
-    manual overrides, and exports a dashboard-ready crosswalk. Every step records
-    an audit trail so a reviewer can see how each coordinate was produced.
+Description: Cleans, geocodes, validates, reviews, and exports messy location
+    address data supplied by the user. The package sits on top of
+    'tidygeocoder': it calls geocoding services, rejects implausible coordinates
+    with configurable region guards, applies fallback name/address matching,
+    joins points to optional local geography with 'sf', and records an audit
+    trail showing how each coordinate was produced. Outputs are designed for
+    manual review, dashboards, and reusable location crosswalks.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -41,6 +41,6 @@ Suggests:
     tibble
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-LazyData: true
+Config/Needs/website: pkgdown
 URL: https://prigasg.github.io/locatr/, https://github.com/PrigasG/locatr
 BugReports: https://github.com/PrigasG/locatr/issues
