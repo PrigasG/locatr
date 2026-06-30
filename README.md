@@ -26,7 +26,9 @@ wraps that reality with three guards:
 
 Every function records an audit trail (`geocode_method`, `geocode_pass`,
 `match_status`, `validation_status`, `review_status`, `manual_override_used`) so a
-reviewer can see how each coordinate was produced.
+reviewer can see how each coordinate was produced. In finished geocoding output,
+`review_status` uses outcome-oriented values such as `auto_accepted`,
+`needs_manual_review`, `manual_override_applied`, and `rejected`.
 
 ## Install
 
@@ -97,6 +99,9 @@ Tier 0 is optional and authoritative: pass
 checked before. These rows are bbox-validated, stamped `pass_0_reference`, and
 skipped by every later tier.
 
+The input readiness value `ready_for_geocoding` is internal to the cascade; after
+`geocode_records()` completes, valid matched rows are marked `auto_accepted`.
+
 Name lookup is score-gated when the geocoder returns score/type fields. Precise
 point-address hits above `min_score` pass cleanly; fuzzier POI, locality, or
 low-score hits keep coordinates for reviewer context but remain in
@@ -166,10 +171,3 @@ New England; `place` covers incorporated places/CDPs but misses townships and
 many unincorporated areas; `tract` uses tract GEOIDs. For high-stakes,
 state-specific reporting where "municipality" has legal meaning, use an
 official state GIS layer and pass it directly.
-
-## Status / TODO
-
-- [ ] Add more region presets once real workflows need them
-- [x] Add a packaged local geography dataset (NJ municipalities via `data-raw/local_geography.R`)
-- [x] Add a scalable multi-state geography builder (`build_local_geography()` via Census/`tigris`)
-- [x] Add name-match score thresholds for fuzzy providers that expose scores

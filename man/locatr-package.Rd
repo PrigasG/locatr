@@ -13,6 +13,7 @@ A thin audit, validation, fallback, and crosswalk layer that sits on top of 'tid
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://prigasg.github.io/locatr/}
   \item \url{https://github.com/PrigasG/locatr}
   \item Report bugs at \url{https://github.com/PrigasG/locatr/issues}
 }

@@ -8,8 +8,9 @@
 #'
 #' Each tier records how it placed a row in `geocode_pass`, so the final frame is
 #' self-documenting: `pass_0_reference`, `pass_1_census_structured`,
-#' `pass_2_fallback`, or `pass_4_name_lookup`. Anything still unmatched lands in
-#' `needs_manual_review`.
+#' `pass_2_fallback`, or `pass_4_name_lookup`. After the cascade, valid matched
+#' rows are marked `review_status == "auto_accepted"`; anything still unmatched
+#' lands in `needs_manual_review`, while invalid coordinates are `rejected`.
 #'
 #' Supplying `reference` runs an authoritative Tier 0 first
 #' ([backfill_from_reference()]): rows whose verified coordinates are already
@@ -81,7 +82,7 @@ geocode_records <- function(data,
     say("  placed in region so far: ", .n_in_region(out, bbox))
   }
 
-  out
+  .finalize_review_status(out)
 }
 
 # Count rows whose coordinates fall inside the configured bbox.
@@ -100,5 +101,31 @@ geocode_records <- function(data,
   for (col in names(defaults)) {
     if (!col %in% names(data)) data[[col]] <- defaults[[col]]
   }
+  data
+}
+
+.finalize_review_status <- function(data) {
+  if (!"review_status" %in% names(data)) {
+    return(data)
+  }
+
+  validation <- if ("validation_status" %in% names(data)) {
+    data$validation_status
+  } else {
+    rep(NA_character_, nrow(data))
+  }
+  matched <- if ("match_status" %in% names(data)) {
+    data$match_status == "matched"
+  } else {
+    rep(FALSE, nrow(data))
+  }
+
+  data$review_status <- dplyr::case_when(
+    data$review_status == "manual_override_applied" ~ data$review_status,
+    validation == "outside_region" ~ "rejected",
+    matched & (is.na(validation) | validation == "coordinate_ok") ~ "auto_accepted",
+    data$review_status == "ready_for_geocoding" ~ "needs_manual_review",
+    TRUE ~ data$review_status
+  )
   data
 }

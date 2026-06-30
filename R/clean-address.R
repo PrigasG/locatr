@@ -2,9 +2,11 @@
 #'
 #' Normalises raw address, city and ZIP text into geocoder-friendly columns and
 #' builds a single-line `full_address_clean`. Column mappings are supplied with
-#' tidy-eval (bare column names). The original columns are preserved; cleaned
-#' values are written to new `*_clean` columns, and a stable `record_id`
-#' character key is created for downstream joins.
+#' tidy-eval (bare column names). Original address pieces are preserved in
+#' `*_raw` columns. If the input already contains a `full_address_clean` column
+#' in any case style (for example `Full_Address_Clean`), locatr preserves that
+#' user-supplied value as `full_address_raw` so there is only one canonical
+#' `full_address_clean` column after cleaning.
 #'
 #' @param data A data frame of records with addresses.
 #' @param id   Bare column name holding a unique record identifier.
@@ -15,8 +17,9 @@
 #'   first production workflow; pass another state abbreviation as needed.
 #'
 #' @return `data` with added columns: `record_id`, `record_name`,
-#'   `address_raw`, `city_raw`, `zip_raw`, `address_clean`, `city_clean`,
-#'   `state_clean`, `zip_clean`, `full_address_clean`.
+#'   `address_raw`, `city_raw`, `zip_raw`, optional `full_address_raw`,
+#'   `address_clean`, `city_clean`, `state_clean`, `zip_clean`,
+#'   `full_address_clean`.
 #' @export
 #' @examples
 #' df <- tibble::tibble(
@@ -28,6 +31,7 @@
 clean_addresses <- function(data, id, address, city, zip,
                                    name = NULL, state = "NJ") {
   name_q <- rlang::enquo(name)
+  data <- .protect_existing_full_address_clean(data)
 
   out <- data %>%
     dplyr::mutate(
@@ -91,4 +95,35 @@ clean_addresses <- function(data, id, address, city, zip,
   }
 
   out
+}
+
+.protect_existing_full_address_clean <- function(data) {
+  existing <- names(data)[toupper(names(data)) == "FULL_ADDRESS_CLEAN"]
+  if (length(existing) == 0) {
+    return(data)
+  }
+
+  keep <- existing[1]
+  names(data)[names(data) == keep] <- .available_name(names(data), "full_address_raw")
+
+  drop <- setdiff(existing, keep)
+  if (length(drop) > 0) {
+    data <- data[, !names(data) %in% drop, drop = FALSE]
+  }
+  data
+}
+
+.available_name <- function(existing, candidate) {
+  if (!candidate %in% existing) {
+    return(candidate)
+  }
+
+  i <- 1L
+  repeat {
+    next_name <- paste0(candidate, "_", i)
+    if (!next_name %in% existing) {
+      return(next_name)
+    }
+    i <- i + 1L
+  }
 }

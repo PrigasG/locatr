@@ -12,7 +12,7 @@ NULL
 # referenced via .data$ or created mid-pipeline.
 utils::globalVariables(c(
   "address_raw", "city_raw", "zip_raw",
-  "address_clean", "city_clean", "state_clean", "zip_clean",
+  "full_address_raw", "address_clean", "city_clean", "state_clean", "zip_clean",
   "full_address_clean", "record_id", "record_name",
   "latitude", "longitude", "fb_latitude", "fb_longitude",
   "fb_in_bbox", "fb_status", "use_fb",

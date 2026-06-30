@@ -51,8 +51,9 @@ unplaced.
 \details{
 Each tier records how it placed a row in \code{geocode_pass}, so the final frame is
 self-documenting: \code{pass_0_reference}, \code{pass_1_census_structured},
-\code{pass_2_fallback}, or \code{pass_4_name_lookup}. Anything still unmatched lands in
-\code{needs_manual_review}.
+\code{pass_2_fallback}, or \code{pass_4_name_lookup}. After the cascade, valid matched
+rows are marked \code{review_status == "auto_accepted"}; anything still unmatched
+lands in \code{needs_manual_review}, while invalid coordinates are \code{rejected}.
 
 Supplying \code{reference} runs an authoritative Tier 0 first
 (\code{\link[=backfill_from_reference]{backfill_from_reference()}}): rows whose verified coordinates are already

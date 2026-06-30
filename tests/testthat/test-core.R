@@ -12,6 +12,22 @@ test_that("clean_addresses normalises ONE and abbreviations", {
   expect_equal(out$state_clean, "NJ")
 })
 
+test_that("clean_addresses protects a user-supplied full address column", {
+  df <- tibble::tibble(
+    LocationID = "a",
+    Full_Address_Clean = "ONE BAY AVE, Montclair, NJ 7042",
+    Address = "ONE BAY AVE",
+    City = "Montclair",
+    Zip = "7042"
+  )
+  out <- clean_addresses(df, id = LocationID, address = Address,
+                         city = City, zip = Zip)
+
+  expect_false("Full_Address_Clean" %in% names(out))
+  expect_equal(out$full_address_raw, "ONE BAY AVE, Montclair, NJ 7042")
+  expect_equal(out$full_address_clean, "1 BAY AVENUE, MONTCLAIR, NJ 07042")
+})
+
 test_that("flag_bad_addresses routes PO boxes and placeholders to review", {
   df <- tibble::tibble(
     record_id = c("a", "b", "c"),
@@ -289,6 +305,23 @@ test_that("census does not clobber Tier 0 coords when no rows are ready", {
 
   expect_equal(out$latitude, 40.22)
   expect_equal(out$geocode_pass, "pass_0_reference")
+})
+
+test_that("geocode_records finalises output review statuses", {
+  df <- tibble::tibble(
+    record_id = c("a", "b", "c", "d"),
+    review_status = c("ready_for_geocoding", "ready_for_geocoding",
+                      "needs_manual_review", "manual_override_applied"),
+    match_status = c("matched", "matched", "no_match", "matched"),
+    validation_status = c("coordinate_ok", "outside_region",
+                          "missing_coordinates", "coordinate_ok")
+  )
+
+  out <- locatr:::.finalize_review_status(df)
+
+  expect_equal(out$review_status,
+               c("auto_accepted", "rejected", "needs_manual_review",
+                 "manual_override_applied"))
 })
 
 test_that("export_location_crosswalk keeps name match audit columns", {

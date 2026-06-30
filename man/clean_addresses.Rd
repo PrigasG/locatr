@@ -21,15 +21,18 @@ first production workflow; pass another state abbreviation as needed.}
 }
 \value{
 \code{data} with added columns: \code{record_id}, \code{record_name},
-\code{address_raw}, \code{city_raw}, \code{zip_raw}, \code{address_clean}, \code{city_clean},
-\code{state_clean}, \code{zip_clean}, \code{full_address_clean}.
+\code{address_raw}, \code{city_raw}, \code{zip_raw}, optional \code{full_address_raw},
+\code{address_clean}, \code{city_clean}, \code{state_clean}, \code{zip_clean},
+\code{full_address_clean}.
 }
 \description{
 Normalises raw address, city and ZIP text into geocoder-friendly columns and
 builds a single-line \code{full_address_clean}. Column mappings are supplied with
-tidy-eval (bare column names). The original columns are preserved; cleaned
-values are written to new \verb{*_clean} columns, and a stable \code{record_id}
-character key is created for downstream joins.
+tidy-eval (bare column names). Original address pieces are preserved in
+\verb{*_raw} columns. If the input already contains a \code{full_address_clean} column
+in any case style (for example \code{Full_Address_Clean}), locatr preserves that
+user-supplied value as \code{full_address_raw} so there is only one canonical
+\code{full_address_clean} column after cleaning.
 }
 \examples{
 df <- tibble::tibble(
