@@ -1,0 +1,5 @@
+^data-raw$
+^analysis$
+^.*\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$

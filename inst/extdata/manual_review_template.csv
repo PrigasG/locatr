@@ -1,0 +1,1 @@
+record_id,record_name,full_address_clean,latitude,longitude,location_county,location_locality,match_status,validation_status,bad_address_flag,manual_latitude,manual_longitude,manual_county,manual_locality,manual_note
