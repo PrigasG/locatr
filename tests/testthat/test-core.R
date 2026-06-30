@@ -82,7 +82,7 @@ test_that("geocode_by_name is a no-op when nothing needs it", {
   out <- geocode_by_name(df)
 
   expect_true(all(c("nm_latitude", "nm_longitude", "nm_status") %in% names(out)))
-  expect_true(is.na(out$nm_status))
+  expect_equal(out$nm_status, "not_run")
   expect_equal(out$latitude, 40.22)        # untouched
   expect_equal(out$geocode_pass, "pass_1_census_structured")
 })

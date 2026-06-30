@@ -38,8 +38,9 @@ is requested automatically so scores are available; pass
 \code{data} with name-lookup audit columns \code{nm_latitude}, \code{nm_longitude},
 \code{nm_score}, \code{nm_addr_type}, \code{nm_status}, and updated
 \code{latitude}/\code{longitude}/\code{geocode_method}/\code{geocode_pass}/\code{match_status} for
-rows the name pass filled. Low-confidence fills also set
-\code{review_status == "needs_manual_review"}.
+rows the name pass filled. When there is nothing for the tier to geocode,
+\code{nm_status} is set to \code{"not_run"} for audit clarity. Low-confidence fills
+also set \code{review_status == "needs_manual_review"}.
 }
 \description{
 For rows still unplaced after the address-based passes, geocodes by record

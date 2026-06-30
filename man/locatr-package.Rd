@@ -4,11 +4,11 @@
 \name{locatr-package}
 \alias{locatr}
 \alias{locatr-package}
-\title{locatr: Audit-Ready Geocoding and Local Geography Crosswalks for Messy Location Data}
+\title{locatr: Audit-Ready Geocoding and Local Geography for Messy Location Data}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-A thin audit, validation, fallback, and crosswalk layer that sits on top of 'tidygeocoder'. It cleans and flags messy location addresses, geocodes them via the US Census batch geocoder with an ArcGIS fallback, validates the returned coordinates against a configurable bounding box (and optionally a true boundary polygon), joins points to local geography with 'sf', supports manual overrides, and exports a dashboard-ready crosswalk. Every step records an audit trail so a reviewer can see how each coordinate was produced.
+Cleans, geocodes, validates, reviews, and exports messy location address data supplied by the user. The package sits on top of 'tidygeocoder': it calls geocoding services, rejects implausible coordinates with configurable region guards, applies fallback name/address matching, joins points to optional local geography with 'sf', and records an audit trail showing how each coordinate was produced. Outputs are designed for manual review, dashboards, and reusable location crosswalks.
 }
 \seealso{
 Useful links:

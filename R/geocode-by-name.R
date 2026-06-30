@@ -38,8 +38,9 @@
 #' @return `data` with name-lookup audit columns `nm_latitude`, `nm_longitude`,
 #'   `nm_score`, `nm_addr_type`, `nm_status`, and updated
 #'   `latitude`/`longitude`/`geocode_method`/`geocode_pass`/`match_status` for
-#'   rows the name pass filled. Low-confidence fills also set
-#'   `review_status == "needs_manual_review"`.
+#'   rows the name pass filled. When there is nothing for the tier to geocode,
+#'   `nm_status` is set to `"not_run"` for audit clarity. Low-confidence fills
+#'   also set `review_status == "needs_manual_review"`.
 #' @export
 geocode_by_name <- function(data, method = "arcgis",
                             bbox = region_bbox("NJ"),
@@ -56,7 +57,7 @@ geocode_by_name <- function(data, method = "arcgis",
     dplyr::mutate(d,
                   nm_latitude = NA_real_, nm_longitude = NA_real_,
                   nm_score = NA_real_, nm_addr_type = NA_character_,
-                  nm_status = NA_character_)
+                  nm_status = "not_run")
   }
 
   needs <- data %>%
