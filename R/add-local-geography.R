@@ -190,6 +190,48 @@ add_muni_from_shapes <- function(data, muni_shapes,
   joined
 }
 
+#' Add county and municipality fields from Census boundaries
+#'
+#' Convenience wrapper for the common workflow where users want county and
+#' municipality/locality fields but do not already have a boundary file. It
+#' builds a Census TIGER/Line geography layer with [build_local_geography()] and
+#' then applies [add_muni_from_shapes()].
+#'
+#' For reporting where municipality has a state-specific legal definition, use
+#' [add_muni_from_shapes()] with an official state/local GIS layer.
+#'
+#' @param data A validated data frame with `latitude`/`longitude`.
+#' @param state Two-letter state abbreviation or FIPS code.
+#' @param geography Which Census layer should become `Municipality`; passed to
+#'   [build_local_geography()].
+#' @param county Optional county filter for supported Census layers.
+#' @param year Vintage year for the boundary files.
+#' @param cb If `TRUE`, use smaller cartographic boundary files.
+#' @param ... Passed through to [build_local_geography()].
+#'
+#' @return `data` with `County`, `Municipality`, `Muni Key`, and
+#'   `muni_match_status`, plus the generic `location_*` geography audit fields.
+#' @export
+add_county_muni <- function(data,
+                            state,
+                            geography = c("county_subdivision", "place",
+                                          "county", "tract"),
+                            county = NULL,
+                            year = NULL,
+                            cb = TRUE,
+                            ...) {
+  geography <- match.arg(geography)
+  shapes <- build_local_geography(
+    state = state,
+    geography = geography,
+    county = county,
+    year = year,
+    cb = cb,
+    ...
+  )
+  add_muni_from_shapes(data, muni_shapes = shapes)
+}
+
 .join_shape_key <- function(data, shapes, key_col) {
   has_xy <- !is.na(data$latitude) & !is.na(data$longitude)
   result <- rep(NA_character_, nrow(data))

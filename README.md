@@ -50,7 +50,7 @@ cleaned <- records %>%
 
 geocoded <- geocode_records(cleaned, bbox = region_bbox("NJ"))
 
-with_geography <- add_local_geography(geocoded, geography_shapes = my_local_shapes)
+with_geography <- add_county_muni(geocoded, state = "NJ")
 
 write_geocode_review(with_geography, "manual_review.csv")
 
@@ -147,8 +147,16 @@ from [NJGIN/NJOGIS Municipal Boundaries of NJ](https://njogis-newjersey.opendata
 
 ## Any State, With Census TIGER/Line
 
-`build_local_geography()` pulls Census boundaries through `tigris` and
-standardises them to the `location_county` / `location_locality` schema:
+`add_county_muni()` is the shortest path when Census TIGER/Line boundaries are
+good enough for your workflow:
+
+```r
+final <- add_county_muni(geocoded, state = "PA", geography = "county_subdivision")
+```
+
+Under the hood, `build_local_geography()` pulls Census boundaries through
+`tigris` and standardises them to the `location_county` / `location_locality`
+schema:
 
 ```r
 areas <- build_local_geography(state = "PA", geography = "county_subdivision")

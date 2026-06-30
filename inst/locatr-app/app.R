@@ -179,7 +179,9 @@ ui <- page_navbar(
         fileInput("data_file", "Data file (CSV, Excel, or Parquet)",
                   accept = c(".csv", ".tsv", ".txt", ".xlsx", ".xls", ".parquet")),
         helpText("Each row should be one record with an address."),
-        uiOutput("data_summary")
+        uiOutput("data_summary"),
+        actionButton("go_geocode", "Continue to geocode",
+                     class = "btn-primary", icon = icon("arrow-right"))
       ),
       card(
         card_header("Preview"),
@@ -229,6 +231,9 @@ ui <- page_navbar(
                       "Upload a shapefile" = "shapefile"),
           selected = "census"
         ),
+        helpText("County and municipality fields are optional. Use Census ",
+                 "boundaries when you do not have a file, or upload your own ",
+                 "authoritative geography when you prefer that source."),
         conditionalPanel(
           "input.geo_source == 'census'",
           selectInput("geo_state", "State", choices = US_STATES, selected = "NJ"),
@@ -237,7 +242,8 @@ ui <- page_navbar(
                       selected = "county_subdivision"),
           actionButton("build_geo", "Build geography", class = "btn-primary",
                        icon = icon("layer-group")),
-          helpText("Uses the tigris package; downloads Census boundaries.")
+          helpText("State is enough for the automated path. Building here is ",
+                   "optional; the download step can build the layer when needed.")
         ),
         conditionalPanel(
           "input.geo_source == 'shapefile'",
@@ -253,7 +259,9 @@ ui <- page_navbar(
           ),
           helpText("Spatial assigns each point to the polygon it falls in. ",
                    "Use an attribute key to merge on a shared column when the ",
-                   "spatial join is not the right criteria."),
+                   "spatial join is not the right criteria. County, locality, ",
+                   "and muni key fields are optional unless you need an ",
+                   "attribute-key merge, where the two key columns are required."),
           uiOutput("shp_colmap_ui")
         )
       ),
@@ -515,6 +523,11 @@ server <- function(input, output, session) {
     }
   })
 
+  observeEvent(input$go_geocode, {
+    req(rv$data)
+    bslib::nav_select("nav", "2. Geocode", session = session)
+  })
+
   output$geo_layer_table <- DT::renderDT({
     req(rv$geo_layer)
     DT::datatable(utils::head(sf::st_drop_geometry(rv$geo_layer), 200),
@@ -533,10 +546,20 @@ server <- function(input, output, session) {
 
   # --- Step 4: optional join + download -------------------------------------
   observeEvent(input$run_join, {
-    req(rv$geocoded, rv$geo_layer)
+    req(rv$geocoded)
     withProgress(message = "Joining to geography ...", value = 0.5, {
       crosswalk <- notify_error({
         is_shp <- identical(input$geo_source, "shapefile")
+        if (!is_shp && is.null(rv$geo_layer)) {
+          incProgress(0.2, detail = "building Census geography")
+          rv$geo_layer <- locatr::build_local_geography(
+            state = input$geo_state,
+            geography = input$geo_level
+          )
+        }
+        if (is_shp) {
+          req(rv$geo_layer)
+        }
         if (is_shp && identical(input$join_mode, "key")) {
           req(input$data_key, input$shp_key)
           joined <- attribute_join_geography(

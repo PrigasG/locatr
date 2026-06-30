@@ -479,6 +479,36 @@ test_that("add_muni_from_shapes adds Tableau municipality fields", {
   expect_equal(out$muni_match_status, "muni_matched")
 })
 
+test_that("add_county_muni builds Census geography and adds Tableau fields", {
+  skip_if_not_installed("tigris")
+
+  fake_counties <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "Mercer",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+  fake_subs <- sf::st_sf(
+    STATEFP = "34", COUNTYFP = "021", NAME = "Trenton",
+    geometry = .test_poly(-75, 40, -74, 41)
+  )
+  testthat::local_mocked_bindings(
+    counties = function(...) fake_counties,
+    county_subdivisions = function(...) fake_subs,
+    .package = "tigris"
+  )
+  points <- tibble::tibble(
+    record_id = "a",
+    latitude = 40.5,
+    longitude = -74.5
+  )
+
+  out <- add_county_muni(points, state = "NJ")
+
+  expect_equal(out$County, "Mercer")
+  expect_equal(out$Municipality, "Trenton")
+  expect_equal(out[["Muni Key"]], "Mercer::Trenton")
+  expect_equal(out$muni_match_status, "muni_matched")
+})
+
 test_that("build_local_geography uses tract GEOID as locality when available (mocked)", {
   skip_if_not_installed("tigris")
 
