@@ -1,10 +1,11 @@
 # locatr
 
-<img src="man/figures/logo.png" align="right" height="180" alt="locatr logo" />
+<div style="float: right; width: 160px; margin-left: 1rem; margin-bottom: 1rem;">
+  <img src="man/figures/logo.png" alt="locatr logo" style="width: 100%; height: auto;" />
+</div>
 
 [![R-CMD-check](https://github.com/PrigasG/locatr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/PrigasG/locatr/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/PrigasG/locatr/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/PrigasG/locatr/actions/workflows/pkgdown.yaml)
-[![Website](https://img.shields.io/badge/docs-pkgdown-teal.svg)](https://prigasg.github.io/locatr/)
+[![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Space-yellow.svg)](https://huggingface.co/spaces/Prigas89/locatr_reviewer)
 
 An audit-ready R toolkit for cleaning, geocoding, validating, reviewing, and
 exporting messy address and location data. It sits **on top of** `tidygeocoder`:
