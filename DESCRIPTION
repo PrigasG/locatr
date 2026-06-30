@@ -24,6 +24,7 @@ Imports:
     rlang (>= 1.1.0),
     sf,
     stringr,
+    tibble,
     tidygeocoder
 Suggests:
     testthat (>= 3.1.7),
@@ -38,7 +39,8 @@ Suggests:
     readxl,
     writexl,
     arrow,
-    tibble
+    httr,
+    jsonlite
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Config/Needs/website: pkgdown

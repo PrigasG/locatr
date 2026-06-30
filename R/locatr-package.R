@@ -24,7 +24,9 @@ utils::globalVariables(c(
   "bad_address_flag", "review_status", "match_status",
   "validation_status", "geocode_method", "geocode_pass",
   "location_county", "location_locality", "geography_match_status",
-  ".locatr_row_id", ".match_count", "in_bbox", "tiger_line_id", "."
+  ".locatr_row_id", ".match_count", "in_bbox", "tiger_line_id", ".",
+  ".loc_address", ".loc_city", ".loc_zip",
+  "match_score", "matched_address", "match_addr_type"
 ))
 
 #' Region bounding box

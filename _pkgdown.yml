@@ -24,6 +24,7 @@ reference:
   - title: Geocode and validate
     contents:
       - geocode_records
+      - geocode_address
       - geocode_census
       - geocode_arcgis
       - geocode_by_name
