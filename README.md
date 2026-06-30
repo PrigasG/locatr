@@ -81,10 +81,10 @@ ranked by confidence (highest first), and by default attaches the county and
 municipality each point falls in:
 
 ```r
-geocode_address(address = "22 peachton", city = "Sicklerville", state = "NJ")
+geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
 
 # keep only high-confidence matches, coordinates only
-geocode_address("1 Bay Ave", city = "Montclair", state = "NJ",
+geocode_address("1 City Hall Sq", city = "Boston", state = "MA",
                 min_score = 90, geography = FALSE)
 ```
 
