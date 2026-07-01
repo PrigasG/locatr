@@ -127,7 +127,7 @@
 <span><span class="co"># keep only high-confidence matches, coordinates only</span></span>
 <span><span class="fu"><a href="reference/geocode_address.html">geocode_address</a></span><span class="op">(</span><span class="st">"1 City Hall Sq"</span>, city <span class="op">=</span> <span class="st">"Boston"</span>, state <span class="op">=</span> <span class="st">"MA"</span>,</span>
 <span>                min_score <span class="op">=</span> <span class="fl">90</span>, geography <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p>Set <code>min_score</code> to a confidence threshold (0-100), <code>max_candidates</code> to cap how many come back, and <code>geography = FALSE</code> to skip the county/municipality join.</p>
+<p>Set <code>min_score</code> to a confidence threshold (0-100), <code>max_candidates</code> to cap how many come back, and <code>geography = FALSE</code> to skip the county/municipality join. In interactive sessions, <code><a href="reference/geocode_address.html">geocode_address()</a></code> prints short progress messages; set <code>show_progress = FALSE</code> to silence them.</p>
 </div>
 <div class="section level2">
 <h2 id="audit-helpers">Audit helpers<a class="anchor" aria-label="anchor" href="#audit-helpers"></a>

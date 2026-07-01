@@ -72,7 +72,8 @@ choose from.</p>
 <span>  geography <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  geography_shapes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bbox <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  quiet <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  show_progress <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -131,6 +132,11 @@ ArcGIS is asked to prefer that extent and an <code>in_bbox</code> flag is added.
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
 <dd><p>If <code>TRUE</code> (default), suppress routine messages from geography
 downloads/joins so the console shows only the returned candidate table.</p></dd>
+
+
+<dt id="arg-show-progress">show_progress<a class="anchor" aria-label="anchor" href="#arg-show-progress"></a></dt>
+<dd><p>If <code>TRUE</code>, print short progress messages while the
+lookup runs. Defaults to <code><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

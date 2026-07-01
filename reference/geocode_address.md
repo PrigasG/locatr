@@ -22,7 +22,8 @@ geocode_address(
   geography = TRUE,
   geography_shapes = NULL,
   bbox = NULL,
-  quiet = TRUE
+  quiet = TRUE,
+  show_progress = interactive()
 )
 ```
 
@@ -83,6 +84,12 @@ geocode_address(
   If `TRUE` (default), suppress routine messages from geography
   downloads/joins so the console shows only the returned candidate
   table.
+
+- show_progress:
+
+  If `TRUE`, print short progress messages while the lookup runs.
+  Defaults to
+  [`interactive()`](https://rdrr.io/r/base/interactive.html).
 
 ## Value
 
