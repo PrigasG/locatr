@@ -43,6 +43,13 @@ reference:
       - write_geocode_review
       - apply_manual_overrides
       - export_location_crosswalk
+  - title: Audit helpers
+    contents:
+      - summarise_geocoding
+      - explain_geocode_result
+      - plot_geocode_review_map
+      - suggest_geography_level
+      - compare_geocode_runs
   - title: App
     contents:
       - run_locatr_app

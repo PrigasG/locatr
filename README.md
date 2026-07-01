@@ -91,6 +91,21 @@ geocode_address("1 City Hall Sq", city = "Boston", state = "MA",
 Set `min_score` to a confidence threshold (0-100), `max_candidates` to cap how
 many come back, and `geography = FALSE` to skip the county/municipality join.
 
+## Audit helpers
+
+After a run, use the small audit helpers to understand and compare results:
+
+```r
+summarise_geocoding(geocoded)
+explain_geocode_result(geocoded, row = 1)
+suggest_geography_level("PA")
+compare_geocode_runs(previous_geocoded, geocoded)
+
+if (interactive()) {
+  plot_geocode_review_map(geocoded)
+}
+```
+
 ## No-code web app
 
 For users who would rather not write R, the same pipeline is available as a
