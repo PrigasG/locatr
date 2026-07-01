@@ -27,7 +27,7 @@ utils::globalVariables(c(
   ".locatr_row_id", ".match_count", "in_bbox", "tiger_line_id", ".",
   ".loc_address", ".loc_city", ".loc_zip",
   "match_score", "matched_address", "match_addr_type",
-  "any_changed"
+  "any_changed", ".dedupe_address", ".dedupe_latitude", ".dedupe_longitude"
 ))
 
 #' Region bounding box

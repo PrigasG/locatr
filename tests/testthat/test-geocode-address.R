@@ -143,6 +143,53 @@ test_that("geocode_address returns ranked candidates", {
   expect_equal(res$input_address, "1 BAY AVENUE, MONTCLAIR, NJ")
 })
 
+test_that("geocode_address de-duplicates repeated ArcGIS candidates", {
+  testthat::local_mocked_bindings(
+    .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
+      tibble::tibble(
+        matched_address = c("Peachton, California", "Peachton, California",
+                            "24 Peachton Ln"),
+        longitude = c(-121.661361, -121.661360, -75.02),
+        latitude = c(39.380444, 39.380440, 39.73),
+        match_score = c(92, 92, 98),
+        match_addr_type = c("Locality", "Locality", "PointAddress")
+      )
+    }
+  )
+
+  res <- geocode_address("24 Peachton", geography = FALSE)
+
+  expect_equal(nrow(res), 2L)
+  expect_equal(res$matched_address, c("24 Peachton Ln", "Peachton, California"))
+  expect_equal(res$rank, c(1L, 2L))
+})
+
+test_that("geocode_address hints when a broad query returns only loose candidates", {
+  testthat::local_mocked_bindings(
+    .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
+      tibble::tibble(
+        matched_address = "Peachton, California",
+        longitude = -121.7,
+        latitude = 39.4,
+        match_score = 92,
+        match_addr_type = "Locality"
+      )
+    }
+  )
+
+  messages <- character()
+  out <- withCallingHandlers(
+    geocode_address("24 Peachton", geography = FALSE, show_progress = TRUE),
+    message = function(m) {
+      messages <<- c(messages, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+
+  expect_s3_class(out, "tbl_df")
+  expect_match(paste(messages, collapse = " "), "add city, state, or bbox")
+})
+
 test_that("geocode_address suppresses routine geography messages by default", {
   testthat::local_mocked_bindings(
     .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {

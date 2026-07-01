@@ -118,7 +118,14 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   cands <- cands %>%
     dplyr::filter(!is.na(.data$match_score), .data$match_score >= min_score) %>%
     dplyr::arrange(dplyr::desc(.data$match_score)) %>%
+    .dedupe_address_candidates() %>%
     dplyr::slice_head(n = max_candidates)
+  .geocode_address_context_tip(
+    cands,
+    has_context = !is.null(city) || !is.null(state) || !is.null(zip) ||
+      !is.null(bbox),
+    show_progress = show_progress
+  )
 
   empty_meta <- function(d) {
     d %>%
@@ -260,6 +267,41 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   if (isTRUE(show_progress)) {
     message("[locatr] ", text)
   }
+}
+
+.geocode_address_context_tip <- function(cands, has_context, show_progress) {
+  if (!isTRUE(show_progress) || isTRUE(has_context) || nrow(cands) == 0L) {
+    return(invisible(NULL))
+  }
+  precise_types <- c("PointAddress", "Subaddress", "StreetAddress")
+  types <- unique(stats::na.omit(cands$match_addr_type))
+  if (length(types) > 0L && !any(types %in% precise_types)) {
+    .geocode_address_progress(
+      TRUE,
+      "Tip: broad lookup returned locality/POI-style candidates; add city, state, or bbox to narrow the search."
+    )
+  }
+  invisible(NULL)
+}
+
+.dedupe_address_candidates <- function(cands) {
+  cands$.dedupe_address <- stringr::str_squish(stringr::str_to_upper(
+    cands$matched_address
+  ))
+  cands$.dedupe_latitude <- round(cands$latitude, 5)
+  cands$.dedupe_longitude <- round(cands$longitude, 5)
+  cands <- dplyr::distinct(
+    cands,
+    .data$.dedupe_address,
+    .data$.dedupe_latitude,
+    .data$.dedupe_longitude,
+    .data$match_addr_type,
+    .keep_all = TRUE
+  )
+  cands$.dedupe_address <- NULL
+  cands$.dedupe_latitude <- NULL
+  cands$.dedupe_longitude <- NULL
+  cands
 }
 
 .single_address_query <- function(address, city = NULL, state = NULL,
