@@ -95,6 +95,9 @@ geography layer:
 
 geocode_address("1600 Pennsylvania Ave NW")
 
+# ambiguous street-only searches often need a little location context
+geocode_address("24 Peachton", state = "NJ")
+
 # keep only high-confidence matches, coordinates only
 geocode_address("1 City Hall Sq", city = "Boston", state = "MA",
                 min_score = 90, geography = FALSE)
