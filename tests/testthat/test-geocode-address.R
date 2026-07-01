@@ -75,12 +75,15 @@ test_that("geocode_address accepts an address-only query", {
     .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
       seen <<- single_line
       tibble::tibble(
-        matched_address = "1600 Pennsylvania Ave NW",
-        longitude = -77.04,
-        latitude = 38.90,
+        matched_address = "1600 Pennsylvania Ave, York, Pennsylvania, 17404",
+        longitude = -76.73,
+        latitude = 39.96,
         match_score = 100,
         match_addr_type = "PointAddress"
       )
+    },
+    add_county_muni = function(data, state, ...) {
+      dplyr::mutate(data, County = state, Municipality = paste0(state, " muni"))
     }
   )
 
@@ -88,7 +91,30 @@ test_that("geocode_address accepts an address-only query", {
 
   expect_equal(seen, "1600 PENNSYLVANIA AVENUE NW")
   expect_equal(res$input_address, "1600 PENNSYLVANIA AVENUE NW")
-  expect_false("County" %in% names(res))
+  expect_equal(res$candidate_state, "PA")
+  expect_equal(res$County, "PA")
+  expect_equal(res$Municipality, "PA muni")
+})
+
+test_that("geocode_address keeps geography columns when no state can be inferred", {
+  testthat::local_mocked_bindings(
+    .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
+      tibble::tibble(
+        matched_address = "The Avenue",
+        longitude = -79.90,
+        latitude = 40.40,
+        match_score = 83,
+        match_addr_type = "POI"
+      )
+    }
+  )
+
+  res <- geocode_address("1600 Pennsylvania Ave NW", geography = TRUE)
+
+  expect_true(all(c("candidate_state", "County", "Municipality",
+                    "muni_match_status") %in% names(res)))
+  expect_true(is.na(res$candidate_state))
+  expect_true(is.na(res$County))
 })
 
 test_that("geocode_address returns ranked candidates", {

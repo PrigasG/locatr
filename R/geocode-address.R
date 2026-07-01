@@ -26,8 +26,9 @@
 #'   be returned. Defaults to `0` (return all, still ranked).
 #' @param max_candidates Maximum number of candidates to return. Defaults to `5`.
 #' @param geography If `TRUE` (default), attach `County`/`Municipality` (and the
-#'   other local-geography fields) when `state` is known or `geography_shapes`
-#'   is supplied. Set `FALSE` for coordinates only.
+#'   other local-geography fields). When `state` is not supplied, locatr tries
+#'   to infer candidate states from ArcGIS matched addresses. Set `FALSE` for
+#'   coordinates only.
 #' @param geography_shapes Optional `sf` boundary layer to attach geography from
 #'   (via [add_muni_from_shapes()]). When `NULL` and `geography = TRUE`, county
 #'   subdivisions are built from Census TIGER/Line for `state` (needs `tigris`
@@ -140,7 +141,7 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
       .geocode_address_progress(show_progress, "Attaching local geography ...")
     } else {
       .geocode_address_progress(show_progress,
-                                "Skipping geography; no state or shapes supplied.")
+                                "Inferring candidate states for geography ...")
     }
     attach_geography <- function() {
       if (!is.null(geography_shapes)) {
@@ -148,7 +149,7 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
       } else if (!is.null(effective_state)) {
         add_county_muni(cands, state = effective_state)
       } else {
-        cands
+        .attach_geography_by_inferred_state(cands)
       }
     }
     geo <- tryCatch(
@@ -179,6 +180,80 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
             "matched_address", "latitude", "longitude", "in_bbox",
             "input_address", "County", "Municipality")
   dplyr::relocate(cands, dplyr::any_of(lead))
+}
+
+.attach_geography_by_inferred_state <- function(cands) {
+  cands$candidate_state <- .infer_candidate_state(cands$matched_address)
+  states <- unique(stats::na.omit(cands$candidate_state))
+  if (length(states) == 0L) {
+    return(.ensure_candidate_geography_cols(cands))
+  }
+
+  pieces <- lapply(states, function(st) {
+    add_county_muni(cands[cands$candidate_state == st, , drop = FALSE],
+                   state = st)
+  })
+  missing_state <- cands[is.na(cands$candidate_state), , drop = FALSE]
+  if (nrow(missing_state) > 0L) {
+    pieces <- c(pieces, list(.ensure_candidate_geography_cols(missing_state)))
+  }
+  dplyr::bind_rows(pieces) %>%
+    dplyr::filter(.data$rank %in% cands$rank) %>%
+    dplyr::arrange(.data$rank)
+}
+
+.ensure_candidate_geography_cols <- function(cands) {
+  cols <- list(
+    County = NA_character_,
+    Municipality = NA_character_,
+    location_county = NA_character_,
+    location_locality = NA_character_,
+    geography_match_status = NA_character_,
+    muni_match_status = NA_character_,
+    county_code = NA_character_,
+    county_fips = NA_character_,
+    municipality_code = NA_character_,
+    municipality_geoid = NA_character_,
+    municipality_name_standard = NA_character_,
+    municipality_type = NA_character_,
+    muni_join_key = NA_character_,
+    `Muni Key` = NA_character_
+  )
+  for (col in names(cols)) {
+    if (!col %in% names(cands)) cands[[col]] <- cols[[col]]
+  }
+  cands
+}
+
+.infer_candidate_state <- function(matched_address) {
+  state_lookup <- c(
+    stats::setNames(datasets::state.abb, toupper(datasets::state.abb)),
+    stats::setNames(datasets::state.abb, toupper(datasets::state.name)),
+    "DC" = "DC",
+    "DISTRICT OF COLUMBIA" = "DC",
+    "WASHINGTON DC" = "DC",
+    "WASHINGTON D C" = "DC"
+  )
+
+  unname(vapply(matched_address, function(x) {
+    if (is.na(x) || !nzchar(x)) {
+      return(NA_character_)
+    }
+    text <- toupper(x)
+    tokens <- stringr::str_split(text, "\\s*,\\s*", simplify = FALSE)[[1]]
+    tokens <- stringr::str_squish(tokens)
+    hit <- state_lookup[tokens[tokens %in% names(state_lookup)]][1]
+    if (!is.na(hit)) {
+      return(unname(hit))
+    }
+
+    names_hit <- names(state_lookup)[
+      vapply(names(state_lookup), function(state_name) {
+        grepl(paste0("\\b", state_name, "\\b"), text)
+      }, logical(1))
+    ]
+    if (length(names_hit) == 0L) NA_character_ else unname(state_lookup[[names_hit[1]]])
+  }, character(1)))
 }
 
 .geocode_address_progress <- function(show_progress, text) {

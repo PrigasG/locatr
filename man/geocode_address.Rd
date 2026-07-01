@@ -37,8 +37,9 @@ be returned. Defaults to \code{0} (return all, still ranked).}
 \item{max_candidates}{Maximum number of candidates to return. Defaults to \code{5}.}
 
 \item{geography}{If \code{TRUE} (default), attach \code{County}/\code{Municipality} (and the
-other local-geography fields) when \code{state} is known or \code{geography_shapes}
-is supplied. Set \code{FALSE} for coordinates only.}
+other local-geography fields). When \code{state} is not supplied, locatr tries
+to infer candidate states from ArcGIS matched addresses. Set \code{FALSE} for
+coordinates only.}
 
 \item{geography_shapes}{Optional \code{sf} boundary layer to attach geography from
 (via \code{\link[=add_muni_from_shapes]{add_muni_from_shapes()}}). When \code{NULL} and \code{geography = TRUE}, county
