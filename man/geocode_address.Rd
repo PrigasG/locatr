@@ -15,7 +15,8 @@ geocode_address(
   geography = TRUE,
   geography_shapes = NULL,
   bbox = NULL,
-  quiet = TRUE
+  quiet = TRUE,
+  show_progress = interactive()
 )
 }
 \arguments{
@@ -49,6 +50,9 @@ ArcGIS is asked to prefer that extent and an \code{in_bbox} flag is added.}
 
 \item{quiet}{If \code{TRUE} (default), suppress routine messages from geography
 downloads/joins so the console shows only the returned candidate table.}
+
+\item{show_progress}{If \code{TRUE}, print short progress messages while the
+lookup runs. Defaults to \code{interactive()}.}
 }
 \value{
 A tibble of candidates ordered by descending \code{match_score}, with

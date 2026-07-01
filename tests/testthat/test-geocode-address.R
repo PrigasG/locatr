@@ -25,6 +25,38 @@ test_that("geocode_address validates its inputs before any network call", {
   expect_error(geocode_address(address = "100 Main St", city = "Trenton",
                                quiet = NA),
                "TRUE")
+  expect_error(geocode_address(address = "100 Main St", city = "Trenton",
+                               show_progress = NA),
+               "TRUE")
+})
+
+test_that("geocode_address can show friendly progress messages", {
+  testthat::local_mocked_bindings(
+    .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
+      tibble::tibble(
+        matched_address = "1600 Pennsylvania Ave NW",
+        longitude = -77.04,
+        latitude = 38.90,
+        match_score = 100,
+        match_addr_type = "PointAddress"
+      )
+    }
+  )
+
+  messages <- character()
+  out <- withCallingHandlers(
+    geocode_address("1600 Pennsylvania Ave NW",
+                    geography = FALSE,
+                    show_progress = TRUE),
+    message = function(m) {
+      messages <<- c(messages, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+
+  expect_match(paste(messages, collapse = " "), "Looking up address candidates")
+  expect_match(paste(messages, collapse = " "), "Done. Returning 1 candidate")
+  expect_s3_class(out, "tbl_df")
 })
 
 test_that("geocode_address errors clearly when httr/jsonlite are unavailable", {

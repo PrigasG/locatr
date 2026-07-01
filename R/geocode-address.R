@@ -36,6 +36,8 @@
 #'   ArcGIS is asked to prefer that extent and an `in_bbox` flag is added.
 #' @param quiet If `TRUE` (default), suppress routine messages from geography
 #'   downloads/joins so the console shows only the returned candidate table.
+#' @param show_progress If `TRUE`, print short progress messages while the
+#'   lookup runs. Defaults to `interactive()`.
 #'
 #' @return A tibble of candidates ordered by descending `match_score`, with
 #'   `query_id`, `rank`, `match_score`, `match_addr_type`, `matched_address`,
@@ -56,7 +58,8 @@
 geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
                             id = NULL, min_score = 0, max_candidates = 5L,
                             geography = TRUE, geography_shapes = NULL,
-                            bbox = NULL, quiet = TRUE) {
+                            bbox = NULL, quiet = TRUE,
+                            show_progress = interactive()) {
   if (!is.character(address) || length(address) != 1L || is.na(address)) {
     stop("`address` must be a single, non-missing character string.",
          call. = FALSE)
@@ -93,6 +96,10 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   if (!is.logical(quiet) || length(quiet) != 1L || is.na(quiet)) {
     stop("`quiet` must be `TRUE` or `FALSE`.", call. = FALSE)
   }
+  if (!is.logical(show_progress) || length(show_progress) != 1L ||
+      is.na(show_progress)) {
+    stop("`show_progress` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
   max_candidates <- as.integer(max_candidates)
 
   query_id <- if (is.null(id)) NA_character_ else as.character(id)[1]
@@ -103,8 +110,10 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   single_line <- .single_address_query(address, city = city,
                                       state = effective_state, zip = zip)
 
+  .geocode_address_progress(show_progress, "Looking up address candidates ...")
   cands <- .arcgis_candidates(single_line, max_candidates = max_candidates,
                               bbox = bbox)
+  .geocode_address_progress(show_progress, "Scoring candidates ...")
   cands <- cands %>%
     dplyr::filter(!is.na(.data$match_score), .data$match_score >= min_score) %>%
     dplyr::arrange(dplyr::desc(.data$match_score)) %>%
@@ -117,6 +126,7 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   }
 
   if (nrow(cands) == 0L) {
+    .geocode_address_progress(show_progress, "No candidates met the threshold.")
     return(empty_meta(cands))
   }
 
@@ -126,6 +136,12 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   }
 
   if (isTRUE(geography)) {
+    if (!is.null(geography_shapes) || !is.null(effective_state)) {
+      .geocode_address_progress(show_progress, "Attaching local geography ...")
+    } else {
+      .geocode_address_progress(show_progress,
+                                "Skipping geography; no state or shapes supplied.")
+    }
     attach_geography <- function() {
       if (!is.null(geography_shapes)) {
         add_muni_from_shapes(cands, muni_shapes = geography_shapes)
@@ -154,10 +170,21 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
     if (!is.null(geo)) cands <- geo
   }
 
+  .geocode_address_progress(
+    show_progress,
+    paste0("Done. Returning ", nrow(cands), " candidate",
+           if (nrow(cands) == 1L) "." else "s.")
+  )
   lead <- c("query_id", "rank", "match_score", "match_addr_type",
             "matched_address", "latitude", "longitude", "in_bbox",
             "input_address", "County", "Municipality")
   dplyr::relocate(cands, dplyr::any_of(lead))
+}
+
+.geocode_address_progress <- function(show_progress, text) {
+  if (isTRUE(show_progress)) {
+    message("[locatr] ", text)
+  }
 }
 
 .single_address_query <- function(address, city = NULL, state = NULL,

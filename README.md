@@ -90,6 +90,8 @@ geocode_address("1 City Hall Sq", city = "Boston", state = "MA",
 
 Set `min_score` to a confidence threshold (0-100), `max_candidates` to cap how
 many come back, and `geography = FALSE` to skip the county/municipality join.
+In interactive sessions, `geocode_address()` prints short progress messages; set
+`show_progress = FALSE` to silence them.
 
 ## Audit helpers
 
