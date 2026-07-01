@@ -87,12 +87,12 @@ review.
 To check one address interactively - no data frame required - use
 [`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md).
 It cleans the text, asks ArcGIS for candidate matches ranked by
-confidence (highest first), and by default attaches the county and
-municipality each point falls in:
+confidence (highest first), and attaches county/municipality when
+`state` is supplied or you provide a geography layer:
 
 ``` r
 
-geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
+geocode_address("1600 Pennsylvania Ave NW")
 
 # keep only high-confidence matches, coordinates only
 geocode_address("1 City Hall Sq", city = "Boston", state = "MA",

@@ -120,9 +120,9 @@
 <div class="section level2">
 <h2 id="quick-single-address-lookup">Quick single-address lookup<a class="anchor" aria-label="anchor" href="#quick-single-address-lookup"></a>
 </h2>
-<p>To check one address interactively - no data frame required - use <code><a href="reference/geocode_address.html">geocode_address()</a></code>. It cleans the text, asks ArcGIS for candidate matches ranked by confidence (highest first), and by default attaches the county and municipality each point falls in:</p>
+<p>To check one address interactively - no data frame required - use <code><a href="reference/geocode_address.html">geocode_address()</a></code>. It cleans the text, asks ArcGIS for candidate matches ranked by confidence (highest first), and attaches county/municipality when <code>state</code> is supplied or you provide a geography layer:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/geocode_address.html">geocode_address</a></span><span class="op">(</span><span class="st">"1600 Pennsylvania Ave NW"</span>, city <span class="op">=</span> <span class="st">"Washington"</span>, state <span class="op">=</span> <span class="st">"DC"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/geocode_address.html">geocode_address</a></span><span class="op">(</span><span class="st">"1600 Pennsylvania Ave NW"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># keep only high-confidence matches, coordinates only</span></span>
 <span><span class="fu"><a href="reference/geocode_address.html">geocode_address</a></span><span class="op">(</span><span class="st">"1 City Hall Sq"</span>, city <span class="op">=</span> <span class="st">"Boston"</span>, state <span class="op">=</span> <span class="st">"MA"</span>,</span>

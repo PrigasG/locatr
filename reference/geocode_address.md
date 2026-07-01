@@ -13,8 +13,8 @@ plausible locations the cascade would choose from.
 ``` r
 geocode_address(
   address,
-  city,
-  state = "NJ",
+  city = NULL,
+  state = NULL,
   zip = NULL,
   id = NULL,
   min_score = 0,
@@ -34,11 +34,12 @@ geocode_address(
 
 - city:
 
-  Locality for the address (length-1 character).
+  Optional locality for the address (length-1 character).
 
 - state:
 
-  Two-letter state abbreviation. Defaults to `"NJ"`.
+  Optional two-letter state abbreviation. When `city` is supplied but
+  `state` is omitted, defaults to `"NJ"` for compatibility.
 
 - zip:
 
@@ -60,8 +61,8 @@ geocode_address(
 - geography:
 
   If `TRUE` (default), attach `County`/`Municipality` (and the other
-  local-geography fields) to each candidate. Set `FALSE` for coordinates
-  only.
+  local-geography fields) when `state` is known or `geography_shapes` is
+  supplied. Set `FALSE` for coordinates only.
 
 - geography_shapes:
 
@@ -94,13 +95,14 @@ and related fields. Zero rows if nothing matched at or above
 
 ## Details
 
-The address text is normalised with
-[`clean_addresses()`](https://prigasg.github.io/locatr/reference/clean_addresses.md)
-(so it benefits from the same abbreviation/secondary-unit cleaning),
-then sent to the free ArcGIS `findAddressCandidates` service, which
-returns several scored candidates for a single query. Use `min_score` to
-keep only candidates at or above a confidence threshold (for example
-`min_score = 90`), and `max_candidates` to cap how many come back.
+The address text is normalised with the same abbreviation/secondary-unit
+cleaning used by
+[`clean_addresses()`](https://prigasg.github.io/locatr/reference/clean_addresses.md),
+then sent to the free ArcGIS `findAddressCandidates` service. `city`,
+`state`, and `zip` are optional for this one-off helper: use them when
+you want to narrow the search, or pass only `address` to inspect broad
+candidate matches. If `city` is supplied and `state` is omitted, `state`
+defaults to `"NJ"` for compatibility with the package's first workflow.
 
 ## See also
 
@@ -111,8 +113,8 @@ for the batch cascade over a data frame.
 
 ``` r
 if (interactive()) {
-# ranked candidates for one address, with county/municipality attached
-geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
+# ranked candidates for one address
+geocode_address("1600 Pennsylvania Ave NW")
 
 # only high-confidence matches, coordinates only
 geocode_address("1 City Hall Sq", city = "Boston", state = "MA",

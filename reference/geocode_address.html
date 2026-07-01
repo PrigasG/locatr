@@ -63,8 +63,8 @@ choose from.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">geocode_address</span><span class="op">(</span></span>
 <span>  <span class="va">address</span>,</span>
-<span>  <span class="va">city</span>,</span>
-<span>  state <span class="op">=</span> <span class="st">"NJ"</span>,</span>
+<span>  city <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  state <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zip <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_score <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -85,11 +85,12 @@ choose from.</p>
 
 
 <dt id="arg-city">city<a class="anchor" aria-label="anchor" href="#arg-city"></a></dt>
-<dd><p>Locality for the address (length-1 character).</p></dd>
+<dd><p>Optional locality for the address (length-1 character).</p></dd>
 
 
 <dt id="arg-state">state<a class="anchor" aria-label="anchor" href="#arg-state"></a></dt>
-<dd><p>Two-letter state abbreviation. Defaults to <code>"NJ"</code>.</p></dd>
+<dd><p>Optional two-letter state abbreviation. When <code>city</code> is supplied
+but <code>state</code> is omitted, defaults to <code>"NJ"</code> for compatibility.</p></dd>
 
 
 <dt id="arg-zip">zip<a class="anchor" aria-label="anchor" href="#arg-zip"></a></dt>
@@ -111,8 +112,8 @@ be returned. Defaults to <code>0</code> (return all, still ranked).</p></dd>
 
 <dt id="arg-geography">geography<a class="anchor" aria-label="anchor" href="#arg-geography"></a></dt>
 <dd><p>If <code>TRUE</code> (default), attach <code>County</code>/<code>Municipality</code> (and the
-other local-geography fields) to each candidate. Set <code>FALSE</code> for
-coordinates only.</p></dd>
+other local-geography fields) when <code>state</code> is known or <code>geography_shapes</code>
+is supplied. Set <code>FALSE</code> for coordinates only.</p></dd>
 
 
 <dt id="arg-geography-shapes">geography_shapes<a class="anchor" aria-label="anchor" href="#arg-geography-shapes"></a></dt>
@@ -142,12 +143,13 @@ fields. Zero rows if nothing matched at or above <code>min_score</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The address text is normalised with <code><a href="clean_addresses.html">clean_addresses()</a></code> (so it benefits from
-the same abbreviation/secondary-unit cleaning), then sent to the free ArcGIS
-<code>findAddressCandidates</code> service, which returns several scored candidates for a
-single query. Use <code>min_score</code> to keep only candidates at or above a confidence
-threshold (for example <code>min_score = 90</code>), and <code>max_candidates</code> to cap how many
-come back.</p>
+    <p>The address text is normalised with the same abbreviation/secondary-unit
+cleaning used by <code><a href="clean_addresses.html">clean_addresses()</a></code>, then sent to the free ArcGIS
+<code>findAddressCandidates</code> service. <code>city</code>, <code>state</code>, and <code>zip</code> are optional for
+this one-off helper: use them when you want to narrow the search, or pass only
+<code>address</code> to inspect broad candidate matches. If <code>city</code> is supplied and
+<code>state</code> is omitted, <code>state</code> defaults to <code>"NJ"</code> for compatibility with the
+package's first workflow.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -157,8 +159,8 @@ come back.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span><span class="co"># ranked candidates for one address, with county/municipality attached</span></span></span>
-<span class="r-in"><span><span class="fu">geocode_address</span><span class="op">(</span><span class="st">"1600 Pennsylvania Ave NW"</span>, city <span class="op">=</span> <span class="st">"Washington"</span>, state <span class="op">=</span> <span class="st">"DC"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># ranked candidates for one address</span></span></span>
+<span class="r-in"><span><span class="fu">geocode_address</span><span class="op">(</span><span class="st">"1600 Pennsylvania Ave NW"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># only high-confidence matches, coordinates only</span></span></span>
 <span class="r-in"><span><span class="fu">geocode_address</span><span class="op">(</span><span class="st">"1 City Hall Sq"</span>, city <span class="op">=</span> <span class="st">"Boston"</span>, state <span class="op">=</span> <span class="st">"MA"</span>,</span></span>
