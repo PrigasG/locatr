@@ -113,8 +113,9 @@ be returned. Defaults to <code>0</code> (return all, still ranked).</p></dd>
 
 <dt id="arg-geography">geography<a class="anchor" aria-label="anchor" href="#arg-geography"></a></dt>
 <dd><p>If <code>TRUE</code> (default), attach <code>County</code>/<code>Municipality</code> (and the
-other local-geography fields) when <code>state</code> is known or <code>geography_shapes</code>
-is supplied. Set <code>FALSE</code> for coordinates only.</p></dd>
+other local-geography fields). When <code>state</code> is not supplied, locatr tries
+to infer candidate states from ArcGIS matched addresses. Set <code>FALSE</code> for
+coordinates only.</p></dd>
 
 
 <dt id="arg-geography-shapes">geography_shapes<a class="anchor" aria-label="anchor" href="#arg-geography-shapes"></a></dt>

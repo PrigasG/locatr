@@ -88,7 +88,8 @@ To check one address interactively - no data frame required - use
 [`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md).
 It cleans the text, asks ArcGIS for candidate matches ranked by
 confidence (highest first), and attaches county/municipality when
-`state` is supplied or you provide a geography layer:
+`state` is supplied, a candidate state can be inferred, or you provide a
+geography layer:
 
 ``` r
 

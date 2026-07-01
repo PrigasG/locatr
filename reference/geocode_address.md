@@ -62,8 +62,9 @@ geocode_address(
 - geography:
 
   If `TRUE` (default), attach `County`/`Municipality` (and the other
-  local-geography fields) when `state` is known or `geography_shapes` is
-  supplied. Set `FALSE` for coordinates only.
+  local-geography fields). When `state` is not supplied, locatr tries to
+  infer candidate states from ArcGIS matched addresses. Set `FALSE` for
+  coordinates only.
 
 - geography_shapes:
 
