@@ -22,8 +22,9 @@
 #'   but `state` is omitted, defaults to `"NJ"` for compatibility.
 #' @param zip Optional ZIP/postal code. Improves match precision when supplied.
 #' @param id Optional label echoed back in the `query_id` column.
-#' @param min_score Minimum ArcGIS match score (0-100) a candidate must reach to
-#'   be returned. Defaults to `0` (return all, still ranked).
+#' @param min_score Minimum ArcGIS match score (0-100) a returned candidate must
+#'   reach to be kept. Defaults to `0`. This filters ArcGIS results; use `city`,
+#'   `state`, `bbox`, or `zip` to change the search context.
 #' @param max_candidates Maximum number of candidates to return. Defaults to `5`.
 #' @param geography If `TRUE` (default), attach `County`/`Municipality` (and the
 #'   other local-geography fields). When `state` is not supplied, locatr tries
@@ -111,8 +112,13 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   single_line <- .single_address_query(address, city = city,
                                       state = effective_state, zip = zip)
 
+  # Over-fetch from ArcGIS: a vague query can fill the top slots with
+  # near-duplicate hits for one place, which dedupe then collapses. Requesting
+  # more than we display keeps distinct localities (e.g. same street name in
+  # another state) from being starved before the dedupe + cap.
+  fetch_n <- min(50L, max(as.integer(max_candidates) * 5L, 25L))
   .geocode_address_progress(show_progress, "Looking up address candidates ...")
-  cands <- .arcgis_candidates(single_line, max_candidates = max_candidates,
+  cands <- .arcgis_candidates(single_line, max_candidates = fetch_n,
                               bbox = bbox)
   .geocode_address_progress(show_progress, "Scoring candidates ...")
   cands <- cands %>%
@@ -135,7 +141,7 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
 
   if (nrow(cands) == 0L) {
     .geocode_address_progress(show_progress, "No candidates met the threshold.")
-    return(empty_meta(cands))
+    return(add_match_confidence(empty_meta(cands)))
   }
 
   cands <- empty_meta(cands)
@@ -178,14 +184,17 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
     if (!is.null(geo)) cands <- geo
   }
 
+  cands <- add_match_confidence(cands)
+
   .geocode_address_progress(
     show_progress,
     paste0("Done. Returning ", nrow(cands), " candidate",
            if (nrow(cands) == 1L) "." else "s.")
   )
-  lead <- c("query_id", "rank", "match_score", "match_addr_type",
-            "matched_address", "latitude", "longitude", "in_bbox",
-            "input_address", "County", "Municipality")
+  lead <- c("query_id", "rank", "match_confidence", "confidence_reason",
+            "match_score", "match_addr_type", "matched_address",
+            "latitude", "longitude", "in_bbox", "input_address",
+            "County", "Municipality")
   dplyr::relocate(cands, dplyr::any_of(lead))
 }
 
@@ -278,7 +287,7 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   if (length(types) > 0L && !any(types %in% precise_types)) {
     .geocode_address_progress(
       TRUE,
-      "Tip: broad lookup returned locality/POI-style candidates; add city, state, or bbox to narrow the search."
+      "Tip: broad lookup returned locality/POI-style candidates. `min_score` only filters returned candidates; add city, state, zip, or bbox to change the search."
     )
   }
   invisible(NULL)

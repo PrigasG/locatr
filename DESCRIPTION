@@ -18,14 +18,17 @@ RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 Imports:
+    datasets,
     dplyr (>= 1.1.0),
     magrittr,
     readr,
     rlang (>= 1.1.0),
     sf,
+    stats,
     stringr,
     tibble,
-    tidygeocoder
+    tidygeocoder,
+    utils
 Suggests:
     testthat (>= 3.1.7),
     knitr,

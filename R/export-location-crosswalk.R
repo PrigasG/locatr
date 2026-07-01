@@ -11,6 +11,9 @@
 #' @return The crosswalk tibble (also written to `path` when supplied).
 #' @export
 export_location_crosswalk <- function(data, path = NULL) {
+  if (!"match_confidence" %in% names(data)) {
+    data <- add_match_confidence(data)
+  }
   crosswalk <- data %>%
     dplyr::transmute(
       record_id           = .data$record_id,
@@ -46,6 +49,8 @@ export_location_crosswalk <- function(data, path = NULL) {
       geography_match_status = .pull_if(data, "geography_match_status"),
       manual_override_used  = .pull_logical(data, "manual_override_used",
                                             default = FALSE),
+      match_confidence      = .pull_if(data, "match_confidence"),
+      confidence_reason     = .pull_if(data, "confidence_reason"),
       review_status         = .data$review_status
     )
 

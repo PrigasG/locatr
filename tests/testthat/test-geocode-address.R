@@ -187,7 +187,28 @@ test_that("geocode_address hints when a broad query returns only loose candidate
   )
 
   expect_s3_class(out, "tbl_df")
-  expect_match(paste(messages, collapse = " "), "add city, state, or bbox")
+  expect_match(paste(messages, collapse = " "), "min_score")
+  expect_match(paste(messages, collapse = " "), "add city, state, zip, or bbox")
+})
+
+test_that("geocode_address keeps confidence_reason character for no candidates", {
+  testthat::local_mocked_bindings(
+    .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
+      tibble::tibble(
+        matched_address = "Peachton, California",
+        longitude = -121.66,
+        latitude = 39.38,
+        match_score = 92,
+        match_addr_type = "Locality"
+      )
+    }
+  )
+
+  res <- geocode_address("22 Peachton", min_score = 93,
+                         geography = FALSE, show_progress = FALSE)
+
+  expect_equal(nrow(res), 0L)
+  expect_type(res$confidence_reason, "character")
 })
 
 test_that("geocode_address suppresses routine geography messages by default", {
@@ -226,4 +247,30 @@ test_that("geocode_address suppresses routine geography messages by default", {
     ),
     "routine geography chatter"
   )
+})
+
+test_that("geocode_address over-fetches so distinct-state localities survive", {
+  seen_n <- NULL
+  testthat::local_mocked_bindings(
+    .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
+      seen_n <<- max_candidates
+      tibble::tibble(
+        matched_address = c("Peachton, California", "Peachton, Georgia"),
+        longitude = c(-121.66, -83.30),
+        latitude = c(39.38, 31.75),
+        match_score = c(92, 90),
+        match_addr_type = c("Locality", "Locality")
+      )
+    }
+  )
+
+  res <- geocode_address("22 Peachton", min_score = 40, geography = FALSE)
+
+  # ArcGIS is asked for more rows than the display cap so dedupe cannot starve
+  # a lower-ranked distinct locality (the Georgia "Peachton") out of the result.
+  expect_gte(seen_n, 25L)
+  expect_equal(nrow(res), 2L)
+  expect_equal(res$matched_address,
+               c("Peachton, California", "Peachton, Georgia"))
+  expect_equal(res$rank, c(1L, 2L))
 })

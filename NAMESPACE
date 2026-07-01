@@ -2,6 +2,7 @@
 
 export(add_county_muni)
 export(add_local_geography)
+export(add_match_confidence)
 export(add_muni_from_key)
 export(add_muni_from_shapes)
 export(apply_manual_overrides)

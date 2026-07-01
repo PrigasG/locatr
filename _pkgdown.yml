@@ -29,6 +29,7 @@ reference:
       - geocode_arcgis
       - geocode_by_name
       - validate_geocodes
+      - add_match_confidence
       - region_bbox
       - bbox_from_sf
       - in_bbox

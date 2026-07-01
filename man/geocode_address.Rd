@@ -31,8 +31,9 @@ but \code{state} is omitted, defaults to \code{"NJ"} for compatibility.}
 
 \item{id}{Optional label echoed back in the \code{query_id} column.}
 
-\item{min_score}{Minimum ArcGIS match score (0-100) a candidate must reach to
-be returned. Defaults to \code{0} (return all, still ranked).}
+\item{min_score}{Minimum ArcGIS match score (0-100) a returned candidate must
+reach to be kept. Defaults to \code{0}. This filters ArcGIS results; use \code{city},
+\code{state}, \code{bbox}, or \code{zip} to change the search context.}
 
 \item{max_candidates}{Maximum number of candidates to return. Defaults to \code{5}.}
 

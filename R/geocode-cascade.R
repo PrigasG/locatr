@@ -82,7 +82,7 @@ geocode_records <- function(data,
     say("  placed in region so far: ", .n_in_region(out, bbox))
   }
 
-  .finalize_review_status(out)
+  add_match_confidence(.finalize_review_status(out))
 }
 
 # Count rows whose coordinates fall inside the configured bbox.
