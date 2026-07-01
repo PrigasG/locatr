@@ -75,6 +75,15 @@ crosswalk. The chunks below are not evaluated because they need live
 geocoding services, but they show the intended end-to-end run. The
 package assumes you already have a data frame; it does not connect to
 databases or source systems.</p>
+<p><code>locatr</code> does not replace <code>tidygeocoder</code>; it
+builds on it. tidygeocoder is the geocoding engine for the main batch
+passes. <code>locatr</code> adds the workflow layer: address cleaning,
+bad-address flagging, region validation, tier-by-tier audit columns,
+local geography joins, review exports, manual overrides, and final
+crosswalk output. If your addresses are already clean and you only need
+one service’s coordinates, call <code><a href="https://jessecambon.github.io/tidygeocoder/reference/geo.html" class="external-link">tidygeocoder::geo()</a></code> or
+<code><a href="https://jessecambon.github.io/tidygeocoder/reference/geocode.html" class="external-link">tidygeocoder::geocode()</a></code> directly. Use <code>locatr</code>
+when the coordinates need to be defensible and reusable.</p>
 <div class="section level2">
 <h2 id="pull-and-clean">1. Pull and clean<a class="anchor" aria-label="anchor" href="#pull-and-clean"></a>
 </h2>

@@ -6,6 +6,18 @@ services, but they show the intended end-to-end run. The package assumes
 you already have a data frame; it does not connect to databases or
 source systems.
 
+`locatr` does not replace `tidygeocoder`; it builds on it. tidygeocoder
+is the geocoding engine for the main batch passes. `locatr` adds the
+workflow layer: address cleaning, bad-address flagging, region
+validation, tier-by-tier audit columns, local geography joins, review
+exports, manual overrides, and final crosswalk output. If your addresses
+are already clean and you only need one service’s coordinates, call
+[`tidygeocoder::geo()`](https://jessecambon.github.io/tidygeocoder/reference/geo.html)
+or
+[`tidygeocoder::geocode()`](https://jessecambon.github.io/tidygeocoder/reference/geocode.html)
+directly. Use `locatr` when the coordinates need to be defensible and
+reusable.
+
 ## 1. Pull and clean
 
 ``` r

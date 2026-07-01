@@ -12,6 +12,42 @@ and exporting messy address and location data. It sits **on top of**
 whether those coordinates are trustworthy and produces a dashboard- and
 GIS-ready crosswalk.
 
+## How locatr relates to tidygeocoder
+
+`locatr` is built on top of
+[`tidygeocoder`](https://jessecambon.github.io/tidygeocoder/), not as a
+replacement. tidygeocoder is the geocoding engine: hand it an address,
+pick a service, and it returns coordinates and service results. `locatr`
+uses that engine for its main geocoding passes and adds the workflow
+layer around it: deciding whether a coordinate can be trusted, recording
+how it was produced, and tying it to local geography for review and
+reuse.
+
+If you just need coordinates from already-clean addresses via one
+service, use
+[`tidygeocoder::geo()`](https://jessecambon.github.io/tidygeocoder/reference/geo.html)
+/ `geocode()` directly. `locatr` earns its place when the data is messy,
+the matches need to be defensible, and you need local geography
+enrichment.
+
+| Concern | tidygeocoder | locatr |
+|----|----|----|
+| Address -\> coordinates | core purpose | delegates main geocoding passes to tidygeocoder |
+| Breadth of services / reverse geocoding | broad support | focused workflow |
+| Normalise messy address text | assumes prepared input | [`clean_addresses()`](https://prigasg.github.io/locatr/reference/clean_addresses.md) |
+| Flag PO boxes / placeholders before calls | outside scope | [`flag_bad_addresses()`](https://prigasg.github.io/locatr/reference/flag_bad_addresses.md) |
+| Reject out-of-region false matches | outside scope | [`validate_geocodes()`](https://prigasg.github.io/locatr/reference/validate_geocodes.md), [`region_bbox()`](https://prigasg.github.io/locatr/reference/region_bbox.md) |
+| Multi-service cascade | `geocode_combine()` cascades not-found records | [`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md) adds region validation, tier stamps, and name-match score/type gates |
+| Audit trail / review status | service results, but no standard review trail | method, pass, match, validation, review, and override fields |
+| Local geography crosswalk | Census geographies possible for Census results | point-in-polygon/key joins to Census or user boundary layers |
+| Human review + reusable crosswalk | outside scope | review export, manual overrides, final crosswalk |
+| Single-address candidate lookup | `geo(limit = ..., full_results = TRUE)` can return candidates | [`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md) adds cleaning, score filtering, context hints, and geography |
+| No-code app | outside scope | Shiny app / Hugging Face Space |
+
+In short: **tidygeocoder turns an address into geocoder results;
+`locatr` decides whether those results can be trusted, records why, and
+ties them to local geography for review and reuse.**
+
 ## Why It Exists
 
 Geocoders are imperfect. Strict services miss real addresses; fuzzy
