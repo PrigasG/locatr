@@ -8,24 +8,26 @@
 #' for letting a reviewer eyeball the plausible locations the cascade would
 #' choose from.
 #'
-#' The address text is normalised with [clean_addresses()] (so it benefits from
-#' the same abbreviation/secondary-unit cleaning), then sent to the free ArcGIS
-#' `findAddressCandidates` service, which returns several scored candidates for a
-#' single query. Use `min_score` to keep only candidates at or above a confidence
-#' threshold (for example `min_score = 90`), and `max_candidates` to cap how many
-#' come back.
+#' The address text is normalised with the same abbreviation/secondary-unit
+#' cleaning used by [clean_addresses()], then sent to the free ArcGIS
+#' `findAddressCandidates` service. `city`, `state`, and `zip` are optional for
+#' this one-off helper: use them when you want to narrow the search, or pass only
+#' `address` to inspect broad candidate matches. If `city` is supplied and
+#' `state` is omitted, `state` defaults to `"NJ"` for compatibility with the
+#' package's first workflow.
 #'
 #' @param address Single-line street address as a length-1 character string.
-#' @param city Locality for the address (length-1 character).
-#' @param state Two-letter state abbreviation. Defaults to `"NJ"`.
+#' @param city Optional locality for the address (length-1 character).
+#' @param state Optional two-letter state abbreviation. When `city` is supplied
+#'   but `state` is omitted, defaults to `"NJ"` for compatibility.
 #' @param zip Optional ZIP/postal code. Improves match precision when supplied.
 #' @param id Optional label echoed back in the `query_id` column.
 #' @param min_score Minimum ArcGIS match score (0-100) a candidate must reach to
 #'   be returned. Defaults to `0` (return all, still ranked).
 #' @param max_candidates Maximum number of candidates to return. Defaults to `5`.
 #' @param geography If `TRUE` (default), attach `County`/`Municipality` (and the
-#'   other local-geography fields) to each candidate. Set `FALSE` for
-#'   coordinates only.
+#'   other local-geography fields) when `state` is known or `geography_shapes`
+#'   is supplied. Set `FALSE` for coordinates only.
 #' @param geography_shapes Optional `sf` boundary layer to attach geography from
 #'   (via [add_muni_from_shapes()]). When `NULL` and `geography = TRUE`, county
 #'   subdivisions are built from Census TIGER/Line for `state` (needs `tigris`
@@ -44,14 +46,14 @@
 #' @export
 #' @examples
 #' if (interactive()) {
-#' # ranked candidates for one address, with county/municipality attached
-#' geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
+#' # ranked candidates for one address
+#' geocode_address("1600 Pennsylvania Ave NW")
 #'
 #' # only high-confidence matches, coordinates only
 #' geocode_address("1 City Hall Sq", city = "Boston", state = "MA",
 #'                 min_score = 90, geography = FALSE)
 #' }
-geocode_address <- function(address, city, state = "NJ", zip = NULL,
+geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
                             id = NULL, min_score = 0, max_candidates = 5L,
                             geography = TRUE, geography_shapes = NULL,
                             bbox = NULL, quiet = TRUE) {
@@ -59,16 +61,18 @@ geocode_address <- function(address, city, state = "NJ", zip = NULL,
     stop("`address` must be a single, non-missing character string.",
          call. = FALSE)
   }
-  if (!is.character(city) || length(city) != 1L || is.na(city)) {
-    stop("`city` must be a single, non-missing character string.",
+  if (!is.null(city) && (!is.character(city) || length(city) != 1L ||
+                         is.na(city))) {
+    stop("`city` must be `NULL` or a single, non-missing character string.",
          call. = FALSE)
   }
   if (!is.null(zip) && (!is.character(zip) || length(zip) != 1L || is.na(zip))) {
     stop("`zip` must be `NULL` or a single, non-missing character string.",
          call. = FALSE)
   }
-  if (!is.character(state) || length(state) != 1L || is.na(state)) {
-    stop("`state` must be a single, non-missing character string.",
+  if (!is.null(state) && (!is.character(state) || length(state) != 1L ||
+                          is.na(state))) {
+    stop("`state` must be `NULL` or a single, non-missing character string.",
          call. = FALSE)
   }
   if (!is.null(id) && (!is.atomic(id) || length(id) < 1L || is.na(id[[1]]))) {
@@ -92,16 +96,12 @@ geocode_address <- function(address, city, state = "NJ", zip = NULL,
   max_candidates <- as.integer(max_candidates)
 
   query_id <- if (is.null(id)) NA_character_ else as.character(id)[1]
-
-  cleaned <- clean_addresses(
-    tibble::tibble(
-      .loc_address = address,
-      .loc_city    = city,
-      .loc_zip     = if (is.null(zip)) NA_character_ else as.character(zip)
-    ),
-    address = .loc_address, city = .loc_city, zip = .loc_zip, state = state
-  )
-  single_line <- cleaned$full_address_clean[[1]]
+  effective_state <- state
+  if (is.null(effective_state) && !is.null(city)) {
+    effective_state <- "NJ"
+  }
+  single_line <- .single_address_query(address, city = city,
+                                      state = effective_state, zip = zip)
 
   cands <- .arcgis_candidates(single_line, max_candidates = max_candidates,
                               bbox = bbox)
@@ -129,8 +129,10 @@ geocode_address <- function(address, city, state = "NJ", zip = NULL,
     attach_geography <- function() {
       if (!is.null(geography_shapes)) {
         add_muni_from_shapes(cands, muni_shapes = geography_shapes)
+      } else if (!is.null(effective_state)) {
+        add_county_muni(cands, state = effective_state)
       } else {
-        add_county_muni(cands, state = state)
+        cands
       }
     }
     geo <- tryCatch(
@@ -156,6 +158,56 @@ geocode_address <- function(address, city, state = "NJ", zip = NULL,
             "matched_address", "latitude", "longitude", "in_bbox",
             "input_address", "County", "Municipality")
   dplyr::relocate(cands, dplyr::any_of(lead))
+}
+
+.single_address_query <- function(address, city = NULL, state = NULL,
+                                  zip = NULL) {
+  address <- .clean_single_address_piece(address)
+  pieces <- c(
+    address,
+    if (!is.null(city)) stringr::str_squish(stringr::str_to_upper(city)),
+    if (!is.null(state)) stringr::str_squish(stringr::str_to_upper(state))
+  )
+  pieces <- pieces[!is.na(pieces) & nzchar(pieces)]
+  query <- paste(pieces, collapse = ", ")
+  if (!is.null(zip)) {
+    zip_clean <- zip %>%
+      stringr::str_remove_all("\\D") %>%
+      stringr::str_sub(1, 5) %>%
+      stringr::str_pad(width = 5, side = "left", pad = "0") %>%
+      dplyr::na_if("00000")
+    if (!is.na(zip_clean) && nzchar(zip_clean)) {
+      query <- paste(query, zip_clean)
+    }
+  }
+  query
+}
+
+.clean_single_address_piece <- function(address) {
+  address %>%
+    stringr::str_to_upper() %>%
+    stringr::str_squish() %>%
+    stringr::str_replace_all("\\bONE\\b", "1") %>%
+    stringr::str_replace_all("\\bTWO\\b", "2") %>%
+    stringr::str_replace_all("\\bTHREE\\b", "3") %>%
+    stringr::str_replace_all("\\bFOUR\\b", "4") %>%
+    stringr::str_replace_all("\\bFIVE\\b", "5") %>%
+    stringr::str_replace_all("\\bRTE?\\b", "ROUTE") %>%
+    stringr::str_replace_all("\\bHWY\\b", "HIGHWAY") %>%
+    stringr::str_replace_all("\\bROUTE\\s+([0-9]+)", "STATE ROUTE \\1") %>%
+    stringr::str_replace_all("\\bHIGHWAY\\s+([0-9]+)", "STATE HIGHWAY \\1") %>%
+    stringr::str_replace_all("\\bMT\\b", "MOUNT") %>%
+    stringr::str_replace_all("\\bAVE\\b", "AVENUE") %>%
+    stringr::str_replace_all("\\bRD\\b", "ROAD") %>%
+    stringr::str_replace_all("\\bBLVD\\b", "BOULEVARD") %>%
+    stringr::str_replace_all("\\bST\\b", "STREET") %>%
+    stringr::str_replace_all("\\bDR\\b", "DRIVE") %>%
+    stringr::str_replace_all("\\bLN\\b", "LANE") %>%
+    stringr::str_replace_all(
+      ",?\\s*(SUITE|STE|STES|UNIT|BLDG|BUILDING|FLOOR|FLR|ROOM|RM)\\s+[A-Z0-9\\-]+",
+      ""
+    ) %>%
+    stringr::str_squish()
 }
 
 # Query the free ArcGIS findAddressCandidates service for one single-line

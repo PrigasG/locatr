@@ -6,8 +6,8 @@
 \usage{
 geocode_address(
   address,
-  city,
-  state = "NJ",
+  city = NULL,
+  state = NULL,
   zip = NULL,
   id = NULL,
   min_score = 0,
@@ -21,9 +21,10 @@ geocode_address(
 \arguments{
 \item{address}{Single-line street address as a length-1 character string.}
 
-\item{city}{Locality for the address (length-1 character).}
+\item{city}{Optional locality for the address (length-1 character).}
 
-\item{state}{Two-letter state abbreviation. Defaults to \code{"NJ"}.}
+\item{state}{Optional two-letter state abbreviation. When \code{city} is supplied
+but \code{state} is omitted, defaults to \code{"NJ"} for compatibility.}
 
 \item{zip}{Optional ZIP/postal code. Improves match precision when supplied.}
 
@@ -35,8 +36,8 @@ be returned. Defaults to \code{0} (return all, still ranked).}
 \item{max_candidates}{Maximum number of candidates to return. Defaults to \code{5}.}
 
 \item{geography}{If \code{TRUE} (default), attach \code{County}/\code{Municipality} (and the
-other local-geography fields) to each candidate. Set \code{FALSE} for
-coordinates only.}
+other local-geography fields) when \code{state} is known or \code{geography_shapes}
+is supplied. Set \code{FALSE} for coordinates only.}
 
 \item{geography_shapes}{Optional \code{sf} boundary layer to attach geography from
 (via \code{\link[=add_muni_from_shapes]{add_muni_from_shapes()}}). When \code{NULL} and \code{geography = TRUE}, county
@@ -66,17 +67,18 @@ for letting a reviewer eyeball the plausible locations the cascade would
 choose from.
 }
 \details{
-The address text is normalised with \code{\link[=clean_addresses]{clean_addresses()}} (so it benefits from
-the same abbreviation/secondary-unit cleaning), then sent to the free ArcGIS
-\code{findAddressCandidates} service, which returns several scored candidates for a
-single query. Use \code{min_score} to keep only candidates at or above a confidence
-threshold (for example \code{min_score = 90}), and \code{max_candidates} to cap how many
-come back.
+The address text is normalised with the same abbreviation/secondary-unit
+cleaning used by \code{\link[=clean_addresses]{clean_addresses()}}, then sent to the free ArcGIS
+\code{findAddressCandidates} service. \code{city}, \code{state}, and \code{zip} are optional for
+this one-off helper: use them when you want to narrow the search, or pass only
+\code{address} to inspect broad candidate matches. If \code{city} is supplied and
+\code{state} is omitted, \code{state} defaults to \code{"NJ"} for compatibility with the
+package's first workflow.
 }
 \examples{
 if (interactive()) {
-# ranked candidates for one address, with county/municipality attached
-geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
+# ranked candidates for one address
+geocode_address("1600 Pennsylvania Ave NW")
 
 # only high-confidence matches, coordinates only
 geocode_address("1 City Hall Sq", city = "Boston", state = "MA",

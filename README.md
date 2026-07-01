@@ -77,11 +77,11 @@ placeholder addresses, and test records still go to manual review.
 
 To check one address interactively - no data frame required - use
 `geocode_address()`. It cleans the text, asks ArcGIS for candidate matches
-ranked by confidence (highest first), and by default attaches the county and
-municipality each point falls in:
+ranked by confidence (highest first), and attaches county/municipality when
+`state` is supplied or you provide a geography layer:
 
 ```r
-geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
+geocode_address("1600 Pennsylvania Ave NW")
 
 # keep only high-confidence matches, coordinates only
 geocode_address("1 City Hall Sq", city = "Boston", state = "MA",

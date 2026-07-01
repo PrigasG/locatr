@@ -1,10 +1,12 @@
 test_that("geocode_address validates its inputs before any network call", {
   expect_error(geocode_address(address = c("a", "b"), city = "Trenton"),
                "single, non-missing")
-  expect_error(geocode_address(address = NA_character_, city = "Trenton"),
+  expect_error(geocode_address(address = NA_character_),
                "single, non-missing")
   expect_error(geocode_address(address = "100 Main St", city = NA_character_),
-               "single, non-missing")
+               "NULL")
+  expect_error(geocode_address(address = "100 Main St", state = NA_character_),
+               "NULL")
   expect_error(geocode_address(address = "100 Main St", city = "Trenton",
                                min_score = 101),
                "0 to 100")
@@ -30,9 +32,31 @@ test_that("geocode_address errors clearly when httr/jsonlite are unavailable", {
             requireNamespace("jsonlite", quietly = TRUE),
           "httr/jsonlite are installed; cannot test the missing-deps path")
   expect_error(
-    geocode_address(address = "100 Main St", city = "Trenton"),
+    geocode_address(address = "100 Main St"),
     "httr"
   )
+})
+
+test_that("geocode_address accepts an address-only query", {
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    .arcgis_candidates = function(single_line, max_candidates = 5L, bbox = NULL) {
+      seen <<- single_line
+      tibble::tibble(
+        matched_address = "1600 Pennsylvania Ave NW",
+        longitude = -77.04,
+        latitude = 38.90,
+        match_score = 100,
+        match_addr_type = "PointAddress"
+      )
+    }
+  )
+
+  res <- geocode_address("1600 Pennsylvania Ave NW", geography = TRUE)
+
+  expect_equal(seen, "1600 PENNSYLVANIA AVENUE NW")
+  expect_equal(res$input_address, "1600 PENNSYLVANIA AVENUE NW")
+  expect_false("County" %in% names(res))
 })
 
 test_that("geocode_address returns ranked candidates", {
@@ -49,7 +73,7 @@ test_that("geocode_address returns ranked candidates", {
   )
 
   res <- geocode_address(address = "1 Bay Ave", city = "Montclair",
-                         state = "NJ", geography = FALSE,
+                         geography = FALSE,
                          min_score = 95)
 
   expect_s3_class(res, "tbl_df")
