@@ -130,10 +130,24 @@
 <p>Set <code>min_score</code> to a confidence threshold (0-100), <code>max_candidates</code> to cap how many come back, and <code>geography = FALSE</code> to skip the county/municipality join.</p>
 </div>
 <div class="section level2">
+<h2 id="audit-helpers">Audit helpers<a class="anchor" aria-label="anchor" href="#audit-helpers"></a>
+</h2>
+<p>After a run, use the small audit helpers to understand and compare results:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/summarise_geocoding.html">summarise_geocoding</a></span><span class="op">(</span><span class="va">geocoded</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/explain_geocode_result.html">explain_geocode_result</a></span><span class="op">(</span><span class="va">geocoded</span>, row <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/suggest_geography_level.html">suggest_geography_level</a></span><span class="op">(</span><span class="st">"PA"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/compare_geocode_runs.html">compare_geocode_runs</a></span><span class="op">(</span><span class="va">previous_geocoded</span>, <span class="va">geocoded</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="reference/plot_geocode_review_map.html">plot_geocode_review_map</a></span><span class="op">(</span><span class="va">geocoded</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="no-code-web-app">No-code web app<a class="anchor" aria-label="anchor" href="#no-code-web-app"></a>
 </h2>
 <p>For users who would rather not write R, the same pipeline is available as a Shiny app: upload a CSV/Excel/Parquet file, geocode it, and download the geocoded records immediately as CSV, Excel, or Parquet. If you also need county/locality fields, attach geography from Census TIGER/Line or an uploaded shapefile first, then download the geography crosswalk. The download step lets you remove columns before exporting. In the app, Unique ID and ZIP are optional: leave them as <code>(auto)</code> / <code>(none)</code> when your file only has address and city.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shiny"</span>, <span class="st">"bslib"</span>, <span class="st">"DT"</span>, <span class="st">"leaflet"</span>,</span>
 <span>                   <span class="st">"readxl"</span>, <span class="st">"writexl"</span>, <span class="st">"arrow"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/run_locatr_app.html">run_locatr_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -197,7 +211,7 @@
 <h2 id="regions-and-geography">Regions And Geography<a class="anchor" aria-label="anchor" href="#regions-and-geography"></a>
 </h2>
 <p>For geocoding, validation, and ArcGIS search extent, pass a bbox:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">custom_bbox</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>lat_min <span class="op">=</span> <span class="fl">38.0</span>, lat_max <span class="op">=</span> <span class="fl">39.0</span>, lon_min <span class="op">=</span> <span class="op">-</span><span class="fl">77.5</span>, lon_max <span class="op">=</span> <span class="op">-</span><span class="fl">76.0</span><span class="op">)</span></span>
 <span><span class="va">geocoded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span>, bbox <span class="op">=</span> <span class="va">custom_bbox</span><span class="op">)</span></span></code></pre></div>
 <p>For stricter validation, pass an <code>sf</code> boundary polygon with <code>boundary =</code>.</p>
@@ -206,7 +220,7 @@
 <h2 id="local-geography-nj-municipalities">Local Geography (NJ Municipalities)<a class="anchor" aria-label="anchor" href="#local-geography-nj-municipalities"></a>
 </h2>
 <p>In production, <code>location_locality</code> and <code>location_county</code> come from a spatial join against an authoritative NJ municipal boundary layer, not from the geocoder response or Census reverse-geocoding. The workflow is: load boundaries, derive a bbox, geocode, validate, convert to <code>sf</code> points, spatially join to the polygons, and write <code>location_county</code>, <code>location_locality</code>, <code>geography_match_status</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">munis</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="st">"path/to/Municipal_Boundaries_of_NJ.shp"</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/valid.html" class="external-link">st_make_valid</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/transmute.html" class="external-link">transmute</a></span><span class="op">(</span>location_county <span class="op">=</span> <span class="va">COUNTY</span>, location_locality <span class="op">=</span> <span class="va">MUN</span><span class="op">)</span></span>
@@ -226,10 +240,10 @@
 <h2 id="any-state-with-census-tigerline">Any State, With Census TIGER/Line<a class="anchor" aria-label="anchor" href="#any-state-with-census-tigerline"></a>
 </h2>
 <p><code><a href="reference/add_county_muni.html">add_county_muni()</a></code> is the shortest path when Census TIGER/Line boundaries are good enough for your workflow:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_county_muni.html">add_county_muni</a></span><span class="op">(</span><span class="va">geocoded</span>, state <span class="op">=</span> <span class="st">"PA"</span>, geography <span class="op">=</span> <span class="st">"county_subdivision"</span><span class="op">)</span></span></code></pre></div>
 <p>Under the hood, <code><a href="reference/build_local_geography.html">build_local_geography()</a></code> pulls Census boundaries through <code>tigris</code> and standardises them to the <code>location_county</code> / <code>location_locality</code> schema, plus stable join fields when the source provides them: <code>county_code</code>, <code>county_fips</code>, <code>municipality_code</code>, <code>municipality_geoid</code>, <code>municipality_name_standard</code>, <code>municipality_type</code>, and <code>muni_join_key</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">areas</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_local_geography.html">build_local_geography</a></span><span class="op">(</span>state <span class="op">=</span> <span class="st">"PA"</span>, geography <span class="op">=</span> <span class="st">"county_subdivision"</span><span class="op">)</span></span>
 <span><span class="va">bbox</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/bbox_from_sf.html">bbox_from_sf</a></span><span class="op">(</span><span class="va">areas</span><span class="op">)</span></span>
 <span></span>

@@ -103,6 +103,23 @@ Set `min_score` to a confidence threshold (0-100), `max_candidates` to
 cap how many come back, and `geography = FALSE` to skip the
 county/municipality join.
 
+## Audit helpers
+
+After a run, use the small audit helpers to understand and compare
+results:
+
+``` r
+
+summarise_geocoding(geocoded)
+explain_geocode_result(geocoded, row = 1)
+suggest_geography_level("PA")
+compare_geocode_runs(previous_geocoded, geocoded)
+
+if (interactive()) {
+  plot_geocode_review_map(geocoded)
+}
+```
+
 ## No-code web app
 
 For users who would rather not write R, the same pipeline is available
@@ -304,6 +321,19 @@ or GEOID.
   : Apply completed manual overrides
 - [`export_location_crosswalk()`](https://prigasg.github.io/locatr/reference/export_location_crosswalk.md)
   : Export the location crosswalk
+
+## Audit helpers
+
+- [`summarise_geocoding()`](https://prigasg.github.io/locatr/reference/summarise_geocoding.md)
+  : Summarise geocoding quality
+- [`explain_geocode_result()`](https://prigasg.github.io/locatr/reference/explain_geocode_result.md)
+  : Explain how geocoded records were handled
+- [`plot_geocode_review_map()`](https://prigasg.github.io/locatr/reference/plot_geocode_review_map.md)
+  : Plot geocoded records for review
+- [`suggest_geography_level()`](https://prigasg.github.io/locatr/reference/suggest_geography_level.md)
+  : Suggest a Census geography level for a state
+- [`compare_geocode_runs()`](https://prigasg.github.io/locatr/reference/compare_geocode_runs.md)
+  : Compare two geocoding runs
 
 ## App
 

@@ -50,6 +50,19 @@
 - [`export_location_crosswalk()`](https://prigasg.github.io/locatr/reference/export_location_crosswalk.md)
   : Export the location crosswalk
 
+## Audit helpers
+
+- [`summarise_geocoding()`](https://prigasg.github.io/locatr/reference/summarise_geocoding.md)
+  : Summarise geocoding quality
+- [`explain_geocode_result()`](https://prigasg.github.io/locatr/reference/explain_geocode_result.md)
+  : Explain how geocoded records were handled
+- [`plot_geocode_review_map()`](https://prigasg.github.io/locatr/reference/plot_geocode_review_map.md)
+  : Plot geocoded records for review
+- [`suggest_geography_level()`](https://prigasg.github.io/locatr/reference/suggest_geography_level.md)
+  : Suggest a Census geography level for a state
+- [`compare_geocode_runs()`](https://prigasg.github.io/locatr/reference/compare_geocode_runs.md)
+  : Compare two geocoding runs
+
 ## App
 
 - [`run_locatr_app()`](https://prigasg.github.io/locatr/reference/run_locatr_app.md)

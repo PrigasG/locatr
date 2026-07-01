@@ -14,6 +14,8 @@
 <url><loc>https://prigasg.github.io/locatr/reference/bbox_from_sf.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/build_local_geography.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/clean_addresses.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/compare_geocode_runs.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/explain_geocode_result.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/export_location_crosswalk.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/flag_bad_addresses.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/geocode_address.html</loc></url>
@@ -24,8 +26,11 @@
 <url><loc>https://prigasg.github.io/locatr/reference/in_bbox.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/index.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/locatr-package.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/plot_geocode_review_map.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/region_bbox.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/run_locatr_app.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/suggest_geography_level.html</loc></url>
+<url><loc>https://prigasg.github.io/locatr/reference/summarise_geocoding.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/validate_geocodes.html</loc></url>
 <url><loc>https://prigasg.github.io/locatr/reference/write_geocode_review.html</loc></url>
 </urlset>
