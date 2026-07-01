@@ -21,6 +21,8 @@
   : Name-based geocode pass (the "paste it in a browser" tier)
 - [`validate_geocodes()`](https://prigasg.github.io/locatr/reference/validate_geocodes.md)
   : Validate geocoded coordinates against a region
+- [`add_match_confidence()`](https://prigasg.github.io/locatr/reference/add_match_confidence.md)
+  : Add a unified match-confidence score
 - [`region_bbox()`](https://prigasg.github.io/locatr/reference/region_bbox.md)
   : Region bounding box
 - [`bbox_from_sf()`](https://prigasg.github.io/locatr/reference/bbox_from_sf.md)

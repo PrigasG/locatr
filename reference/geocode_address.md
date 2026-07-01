@@ -52,8 +52,9 @@ geocode_address(
 
 - min_score:
 
-  Minimum ArcGIS match score (0-100) a candidate must reach to be
-  returned. Defaults to `0` (return all, still ranked).
+  Minimum ArcGIS match score (0-100) a returned candidate must reach to
+  be kept. Defaults to `0`. This filters ArcGIS results; use `city`,
+  `state`, `bbox`, or `zip` to change the search context.
 
 - max_candidates:
 

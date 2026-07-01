@@ -69,6 +69,16 @@ produced. In finished geocoding output, `review_status` uses
 outcome-oriented values such as `auto_accepted`, `needs_manual_review`,
 `manual_override_applied`, and `rejected`.
 
+Those signals are also distilled into a single `match_confidence` (0-1)
+with a plain-language `confidence_reason`, via
+[`add_match_confidence()`](https://prigasg.github.io/locatr/reference/add_match_confidence.md).
+It is attached automatically by
+[`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md),
+carried through the crosswalk, and included in
+[`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md)
+candidates, so you can sort or threshold on one trust column instead of
+reading four.
+
 ## Install
 
 ``` r
@@ -141,7 +151,9 @@ geocode_address("1 City Hall Sq", city = "Boston", state = "MA",
 
 Set `min_score` to a confidence threshold (0-100), `max_candidates` to
 cap how many come back, and `geography = FALSE` to skip the
-county/municipality join. In interactive sessions,
+county/municipality join. `min_score` filters candidates ArcGIS already
+returned; use `city`, `state`, `zip`, or `bbox` when you need to change
+where ArcGIS searches. In interactive sessions,
 [`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md)
 prints short progress messages; set `show_progress = FALSE` to silence
 them.

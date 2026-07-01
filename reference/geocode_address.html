@@ -103,8 +103,9 @@ but <code>state</code> is omitted, defaults to <code>"NJ"</code> for compatibili
 
 
 <dt id="arg-min-score">min_score<a class="anchor" aria-label="anchor" href="#arg-min-score"></a></dt>
-<dd><p>Minimum ArcGIS match score (0-100) a candidate must reach to
-be returned. Defaults to <code>0</code> (return all, still ranked).</p></dd>
+<dd><p>Minimum ArcGIS match score (0-100) a returned candidate must
+reach to be kept. Defaults to <code>0</code>. This filters ArcGIS results; use <code>city</code>,
+<code>state</code>, <code>bbox</code>, or <code>zip</code> to change the search context.</p></dd>
 
 
 <dt id="arg-max-candidates">max_candidates<a class="anchor" aria-label="anchor" href="#arg-max-candidates"></a></dt>
