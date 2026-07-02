@@ -167,16 +167,20 @@ if (interactive()) {
 ## No-code web app
 
 For users who would rather not write R, the same pipeline is available as a
-Shiny app: upload a CSV/Excel/Parquet file, geocode it, and download the
-geocoded records immediately as CSV, Excel, or Parquet. If you also need
-county/locality fields, attach geography from Census TIGER/Line or an uploaded
-shapefile first, then download the geography crosswalk. The download step lets
-you remove columns before exporting. In the app, Unique ID and ZIP are optional:
-leave them as `(auto)` / `(none)` when your file only has address and city.
+Shiny app: upload a CSV/Excel/Parquet file, geocode it with a session cache,
+and download the geocoded records immediately as CSV, Excel, or Parquet. If you
+also need county/locality fields, attach geography from Census TIGER/Line or an
+uploaded shapefile first, optionally append tract/ZCTA/district/school-district
+GEOIDs, then download the geography crosswalk. The app also exposes field
+conflict flags, cache/provenance summaries, and a downloadable Markdown audit
+report with a methods paragraph. The download step lets you remove columns
+before exporting. In the app, Unique ID and ZIP are optional: leave them as
+`(auto)` / `(none)` when your file only has address and city.
 
 ```r
 install.packages(c("shiny", "bslib", "DT", "leaflet",
-                   "readxl", "writexl", "arrow"))
+                   "readr", "readxl", "tibble", "writexl",
+                   "arrow", "tigris"))
 run_locatr_app()
 ```
 

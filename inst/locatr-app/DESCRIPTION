@@ -1,0 +1,19 @@
+Title: locatr Shiny App
+Type: Shiny
+Imports:
+    arrow,
+    bslib,
+    DT,
+    dplyr,
+    leaflet,
+    locatr,
+    readr,
+    readxl,
+    rlang,
+    sf,
+    shiny,
+    tibble,
+    tigris,
+    writexl
+Remotes:
+    PrigasG/locatr

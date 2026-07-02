@@ -2,12 +2,13 @@
 # -----------------------------------------------------------------------------
 # A small Shiny front-end for the locatr pipeline, meant to run as a Hugging
 # Face Space so people can get a geocoded file or geography-tagged crosswalk
-# without writing any R. Four steps:
+# without writing any R. Five steps:
 #   1. Upload a data file (CSV / Excel / Parquet) and preview it.
 #   2. Map the address columns and geocode with locatr's cascade.
 #   3. Attach local geography - either built from Census TIGER/Line, or from a
 #      shapefile the user uploads (.zip, .shp + sidecars, .geojson, or .gpkg).
 #   4. Optionally join, choose output columns, and download CSV / Excel / Parquet.
+#   5. Review provenance and download an audit report.
 #
 # Launch locally with locatr::run_locatr_app().
 # -----------------------------------------------------------------------------
@@ -69,6 +70,52 @@ drop_selected_cols <- function(data, drop_cols) {
   dplyr::select(data, -dplyr::any_of(drop_cols))
 }
 
+as_count_table <- function(x) {
+  if (length(x) == 0L) {
+    return(data.frame(item = character(), count = integer()))
+  }
+  data.frame(item = names(x), count = as.integer(x), row.names = NULL)
+}
+
+app_report_markdown <- function(report) {
+  lines <- c("# locatr audit report", "")
+  if (!is.null(report$run)) {
+    run <- report$run
+    lines <- c(
+      lines,
+      paste0("- Run ID: ", run$run_id),
+      paste0("- Run at: ", run$run_at),
+      paste0("- locatr: ", run$locatr_version),
+      paste0("- tidygeocoder: ", run$tidygeocoder_version),
+      paste0("- Cache: ", run$cache_path),
+      ""
+    )
+  }
+  lines <- c(lines, "## Methods", "", report$methods, "")
+  add_counts <- function(title, counts) {
+    if (length(counts) == 0L) {
+      return(character())
+    }
+    c(paste0("## ", title), "",
+      paste0("- ", names(counts), ": ", as.integer(counts)), "")
+  }
+  lines <- c(lines, add_counts("Review status", report$review_status))
+  lines <- c(lines, add_counts("Placed by", report$tiers))
+  lines <- c(lines, add_counts("Cache status", report$cache_status))
+  if (!is.null(report$confidence) && !is.na(report$confidence$median)) {
+    cf <- report$confidence
+    lines <- c(
+      lines,
+      "## Match confidence", "",
+      paste0("- Median: ", format(cf$median)),
+      paste0("- Mean: ", format(cf$mean)),
+      paste0("- Below ", format(cf$below_threshold), ": ", cf$n_below),
+      ""
+    )
+  }
+  lines
+}
+
 # "" / NULL -> NULL, so the spatial join (add_muni_from_shapes) falls back to
 # auto-detection instead of looking for a column literally named "".
 nz_or_null <- function(x) {
@@ -128,9 +175,16 @@ ui <- page_navbar(
           choices = c("PointAddress", "Subaddress", "StreetAddress"),
           selected = c("PointAddress", "Subaddress", "StreetAddress")
         ),
+        uiOutput("conflict_ui"),
+        tags$hr(),
+        checkboxInput("use_cache", "Use session cache", value = TRUE),
+        checkboxInput("refresh_cache", "Refresh cached geocoder results",
+                      value = FALSE),
         actionButton("run_geocode", "Geocode", class = "btn-primary",
                      icon = icon("location-dot")),
-        helpText("Geocoding calls external services and can take a while.")
+        helpText("The session cache avoids repeated Census/ArcGIS calls during ",
+                 "this app session. Hosted sessions are ephemeral; export the ",
+                 "audit report for a durable record.")
       ),
       layout_columns(
         col_widths = c(7, 5),
@@ -183,7 +237,23 @@ ui <- page_navbar(
                    "and muni key fields are optional unless you need an ",
                    "attribute-key merge, where the two key columns are required."),
           uiOutput("shp_colmap_ui")
-        )
+        ),
+        tags$hr(),
+        checkboxGroupInput(
+          "extra_census_levels", "Optional extra Census geographies",
+          choices = c(
+            "Tract" = "tract",
+            "Block group" = "block_group",
+            "ZCTA" = "zcta",
+            "Congressional district" = "congressional_district",
+            "State senate / upper" = "state_legislative_district_upper",
+            "State house / lower" = "state_legislative_district_lower",
+            "Unified school district" = "school_district"
+          ),
+          selected = character(0)
+        ),
+        helpText("Extra geographies add <level>_geoid and <level>_name columns ",
+                 "to the crosswalk. They use tigris and may download boundary files.")
       ),
       layout_columns(
         col_widths = c(6, 6),
@@ -223,6 +293,33 @@ ui <- page_navbar(
     )
   ),
 
+  nav_panel(
+    title = "5. Audit report",
+    layout_sidebar(
+      sidebar = sidebar(
+        width = 320,
+        actionButton("make_report", "Refresh report", class = "btn-primary",
+                     icon = icon("clipboard-list")),
+        helpText("Reports summarize the geocoding run, cache/provenance, review ",
+                 "statuses, and match confidence. Download the Markdown report ",
+                 "for project records or methods sections."),
+        tags$hr(),
+        downloadButton("dl_report", "Download report (.md)"),
+        downloadButton("dl_provenance", "Download provenance (.txt)")
+      ),
+      layout_columns(
+        col_widths = c(7, 5),
+        card(card_header("Methods paragraph"), verbatimTextOutput("report_methods")),
+        card(
+          card_header("Run provenance"),
+          verbatimTextOutput("provenance_text"),
+          DT::DTOutput("cache_status_table")
+        )
+      ),
+      card(card_header("Review summary"), DT::DTOutput("report_counts_table"))
+    )
+  ),
+
   # right-aligned navbar items
   nav_spacer(),
   nav_item(actionLink("show_help", "Help", icon = icon("circle-question"))),
@@ -236,7 +333,8 @@ ui <- page_navbar(
 
 server <- function(input, output, session) {
   rv <- reactiveValues(
-    data = NULL, geocoded = NULL, geo_layer = NULL, crosswalk = NULL
+    data = NULL, geocoded = NULL, geo_layer = NULL, crosswalk = NULL,
+    cache = NULL, report = NULL
   )
 
   notify_error <- function(expr, msg) {
@@ -260,16 +358,23 @@ server <- function(input, output, session) {
         tags$li(tags$b("Geocode"),
                 " - map your address/city columns, optional ID/ZIP/name columns, ",
                 "pick the state, and run locatr's cascade (Census -> ArcGIS -> ",
-                "name lookup). Geocoding calls external services, so it needs ",
-                "network access and is capped by the row limit."),
+                "name lookup). Use the session cache to avoid repeated service ",
+                "calls while you work. Geocoding calls external services, so it ",
+                "needs network access and is capped by the row limit."),
         tags$li(tags$b("Attach geography (optional)"),
                 " - build county/locality boundaries from Census TIGER/Line, or ",
                 "upload your own shapefile (.zip, or .shp with its sidecars, or ",
-                ".geojson/.gpkg). For a shapefile you choose the join criteria: ",
-                "spatial (point-in-polygon) or an attribute key shared with your data."),
+                ".geojson/.gpkg). You can also append tract, ZCTA, district, or ",
+                "school-district GEOIDs from Census boundaries. For a shapefile ",
+                "you choose the join criteria: spatial (point-in-polygon) or an ",
+                "attribute key shared with your data."),
         tags$li(tags$b("Download"),
                 " - export the geocoded records or the geography crosswalk as ",
-                "CSV, Excel, or Parquet. You can drop columns before downloading.")
+                "CSV, Excel, or Parquet. You can drop columns before downloading."),
+        tags$li(tags$b("Audit report"),
+                " - review the methods paragraph, provenance, cache status, ",
+                "field-conflict flags, and confidence summaries; download the ",
+                "Markdown report for your project records.")
       ),
       tags$p("Low-confidence name matches are flagged for review rather than ",
              "trusted automatically."),
@@ -325,6 +430,16 @@ server <- function(input, output, session) {
     )
   })
 
+  output$conflict_ui <- renderUI({
+    req(rv$data)
+    cols <- names(rv$data)
+    selectInput(
+      "stated_county", "Stated county column (optional conflict check)",
+      choices = c("(none)" = "", cols),
+      selected = guess_col(cols, "county|cnty", allow_none = TRUE)
+    )
+  })
+
   observeEvent(input$run_geocode, {
     req(rv$data, input$col_addr, input$col_city)
     withProgress(message = "Geocoding with locatr ...", value = 0, {
@@ -341,20 +456,39 @@ server <- function(input, output, session) {
         )
         incProgress(0.2, detail = "flagging bad addresses")
         flagged <- locatr::flag_bad_addresses(cleaned)
+        cache <- if (isTRUE(input$use_cache)) {
+          if (is.null(rv$cache)) {
+            rv$cache <- locatr::locatr_cache()
+          }
+          rv$cache
+        } else {
+          NULL
+        }
         incProgress(0.2, detail = "running the cascade")
-        locatr::geocode_records(
+        geocoded <- locatr::geocode_records(
           flagged, bbox = safe_bbox(input$state),
           name_min_score = input$name_min_score,
           name_accept_types = input$name_accept_types,
+          cache = cache,
+          refresh = isTRUE(input$refresh_cache),
           verbose = FALSE
         )
+        if (!is.null(input$stated_county) && nzchar(input$stated_county)) {
+          geocoded <- locatr::flag_field_conflicts(
+            geocoded, stated_county = input$stated_county
+          )
+        } else {
+          geocoded <- locatr::flag_field_conflicts(geocoded)
+        }
+        geocoded
       }, "Geocoding failed")
       if (!is.null(result)) {
         rv$geocoded <- result
         rv$crosswalk <- NULL
+        rv$report <- locatr::geocode_report(result)
         incProgress(0.4, detail = "done")
         showNotification("Geocoding complete.", type = "message")
-        bslib::nav_select("nav", "4. Download", session = session)
+        bslib::nav_select("nav", "5. Audit report", session = session)
       }
     })
   })
@@ -365,7 +499,8 @@ server <- function(input, output, session) {
       dplyr::select(dplyr::any_of(c(
         "record_id", "record_name", "full_address_clean",
         "latitude", "longitude", "geocode_pass", "match_status",
-        "nm_score", "nm_addr_type", "nm_status", "review_status"
+        "nm_score", "nm_addr_type", "nm_status", "match_confidence",
+        "cache_status", "field_conflict", "review_status"
       )))
     DT::datatable(show, options = list(scrollX = TRUE), rownames = FALSE)
   })
@@ -499,10 +634,32 @@ server <- function(input, output, session) {
             key_col = key_col
           )
         }
-        locatr::export_location_crosswalk(joined)
+        crosswalk <- locatr::export_location_crosswalk(joined)
+        if (!is.null(input$extra_census_levels) &&
+            length(input$extra_census_levels) > 0L) {
+          crosswalk <- locatr::add_census_geographies(
+            crosswalk,
+            state = input$geo_state %||% input$state,
+            levels = input$extra_census_levels
+          )
+        }
+        if (!is.null(input$stated_county) && nzchar(input$stated_county) &&
+            input$stated_county %in% names(joined)) {
+          conflict_source <- joined
+          conflict_source <- locatr::flag_field_conflicts(
+            conflict_source, stated_county = input$stated_county
+          )
+          crosswalk$zip_state_conflict <- conflict_source$zip_state_conflict
+          crosswalk$county_conflict <- conflict_source$county_conflict
+          crosswalk$field_conflict <- conflict_source$field_conflict
+        } else if (!"field_conflict" %in% names(crosswalk)) {
+          crosswalk <- locatr::flag_field_conflicts(crosswalk)
+        }
+        crosswalk
       }, "Join failed")
       if (!is.null(crosswalk)) {
         rv$crosswalk <- crosswalk
+        rv$report <- locatr::geocode_report(crosswalk)
         updateRadioButtons(session, "output_source", selected = "crosswalk")
         matched <- sum(!is.na(crosswalk$location_locality))
         rate <- if (nrow(crosswalk) > 0) round(100 * matched / nrow(crosswalk)) else 0
@@ -554,6 +711,12 @@ server <- function(input, output, session) {
     low_conf_count <- if ("match_status" %in% names(dat)) {
       sum(dat$match_status == "matched_low_confidence", na.rm = TRUE)
     } else NA_integer_
+    conflict_count <- if ("field_conflict" %in% names(dat)) {
+      sum(!is.na(dat$field_conflict))
+    } else NA_integer_
+    cached_count <- if ("cache_status" %in% names(dat)) {
+      sum(dat$cache_status == "cached", na.rm = TRUE)
+    } else NA_integer_
 
     tags$div(
       tags$hr(),
@@ -566,8 +729,64 @@ server <- function(input, output, session) {
       if (!is.na(low_conf_count)) {
         tags$div(tags$strong(format(low_conf_count, big.mark = ",")),
                  " low-confidence name matches need review.")
+      },
+      if (!is.na(conflict_count)) {
+        tags$div(tags$strong(format(conflict_count, big.mark = ",")),
+                 " field conflict flags.")
+      },
+      if (!is.na(cached_count)) {
+        tags$div(tags$strong(format(cached_count, big.mark = ",")),
+                 " coordinates replayed from cache.")
       }
     )
+  })
+
+  observeEvent(input$make_report, {
+    dat <- output_data_raw()
+    rv$report <- locatr::geocode_report(dat)
+    showNotification("Audit report refreshed.", type = "message")
+  })
+
+  current_report <- reactive({
+    if (is.null(rv$report)) {
+      dat <- output_data_raw()
+      rv$report <- locatr::geocode_report(dat)
+    }
+    rv$report
+  })
+
+  output$report_methods <- renderText({
+    report <- current_report()
+    paste(strwrap(report$methods, width = 90), collapse = "\n")
+  })
+
+  output$provenance_text <- renderText({
+    dat <- output_data_raw()
+    prov <- tryCatch(locatr::geocode_provenance(dat), error = function(e) NULL)
+    if (is.null(prov) && !is.null(rv$geocoded)) {
+      prov <- tryCatch(locatr::geocode_provenance(rv$geocoded),
+                       error = function(e) NULL)
+    }
+    if (is.null(prov)) {
+      return("No locatr run manifest is attached to this output.")
+    }
+    paste(capture.output(print(prov)), collapse = "\n")
+  })
+
+  output$cache_status_table <- DT::renderDT({
+    report <- current_report()
+    DT::datatable(as_count_table(report$cache_status), rownames = FALSE,
+                  options = list(dom = "t"))
+  })
+
+  output$report_counts_table <- DT::renderDT({
+    report <- current_report()
+    rows <- rbind(
+      cbind(section = "review_status", as_count_table(report$review_status)),
+      cbind(section = "placed_by", as_count_table(report$tiers)),
+      cbind(section = "cache_status", as_count_table(report$cache_status))
+    )
+    DT::datatable(rows, rownames = FALSE, options = list(pageLength = 12))
   })
 
   output$output_map <- renderLeaflet({
@@ -608,6 +827,28 @@ server <- function(input, output, session) {
     filename = function() paste0(input$output_source %||% "geocoded", ".parquet"),
     content = function(file) {
       arrow::write_parquet(output_data(), file)
+    }
+  )
+  output$dl_report <- downloadHandler(
+    filename = function() "locatr-audit-report.md",
+    content = function(file) {
+      writeLines(app_report_markdown(current_report()), file)
+    }
+  )
+  output$dl_provenance <- downloadHandler(
+    filename = function() "locatr-provenance.txt",
+    content = function(file) {
+      dat <- output_data_raw()
+      prov <- tryCatch(locatr::geocode_provenance(dat), error = function(e) NULL)
+      if (is.null(prov) && !is.null(rv$geocoded)) {
+        prov <- tryCatch(locatr::geocode_provenance(rv$geocoded),
+                         error = function(e) NULL)
+      }
+      if (is.null(prov)) {
+        writeLines("No locatr run manifest is attached to this output.", file)
+      } else {
+        writeLines(capture.output(print(prov)), file)
+      }
     }
   )
 }

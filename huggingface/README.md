@@ -21,12 +21,17 @@ optional county/locality enrichment, without writing any R.
    `Parquet` file and inspect the first rows.
 2. **Geocode** - map your address columns and run locatr's cascade
    (US Census -> ArcGIS -> name lookup), with score/type controls for name
-   matches.
+   matches and a session cache so repeated addresses are not re-queried while
+   you work.
 3. **Download geocoded records** - export the geocoded file immediately as
    `CSV`, `Excel`, or `Parquet`, optionally removing columns first.
 4. **Attach geography, if needed** - build county/locality boundaries from
    Census TIGER/Line with `tigris`, or upload a shapefile/GeoPackage/GeoJSON,
-   then download the geography crosswalk.
+   optionally append tract/ZCTA/district/school-district GEOIDs, then download
+   the geography crosswalk.
+5. **Audit the run** - review the methods paragraph, provenance/cache summary,
+   confidence counts, and field-conflict flags; download a Markdown report for
+   project records.
 
 Geocoding calls external services (Census, ArcGIS) and the Census geography
 builder downloads boundary files, so runs need network access and can take a
