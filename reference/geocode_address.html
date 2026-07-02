@@ -73,7 +73,9 @@ choose from.</p>
 <span>  geography_shapes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bbox <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  show_progress <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  show_progress <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  cache <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  refresh <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -139,6 +141,17 @@ downloads/joins so the console shows only the returned candidate table.</p></dd>
 <dt id="arg-show-progress">show_progress<a class="anchor" aria-label="anchor" href="#arg-show-progress"></a></dt>
 <dd><p>If <code>TRUE</code>, print short progress messages while the
 lookup runs. Defaults to <code><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive()</a></code>.</p></dd>
+
+
+<dt id="arg-cache">cache<a class="anchor" aria-label="anchor" href="#arg-cache"></a></dt>
+<dd><p>Optional <code><a href="locatr_cache.html">locatr_cache()</a></code> object. When supplied, the ArcGIS
+candidate lookup for a given query is served from the cache on repeat calls
+(and replayable offline) instead of re-hitting the service.</p></dd>
+
+
+<dt id="arg-refresh">refresh<a class="anchor" aria-label="anchor" href="#arg-refresh"></a></dt>
+<dd><p>If <code>TRUE</code>, bypass any cached entry for this query and re-query
+the service, overwriting the cached result. Defaults to <code>FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

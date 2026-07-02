@@ -58,7 +58,9 @@ interpolation cannot, because a composite geocoder recognises the named place.</
 <span>  bbox <span class="op">=</span> <span class="fu"><a href="region_bbox.html">region_bbox</a></span><span class="op">(</span><span class="st">"NJ"</span><span class="op">)</span>,</span>
 <span>  min_score <span class="op">=</span> <span class="fl">90</span>,</span>
 <span>  accept_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PointAddress"</span>, <span class="st">"Subaddress"</span>, <span class="st">"StreetAddress"</span><span class="op">)</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  cache <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  refresh <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -96,6 +98,17 @@ point-address types <code>c("PointAddress", "Subaddress", "StreetAddress")</code
 <dd><p>Passed through to <code><a href="https://jessecambon.github.io/tidygeocoder/reference/geocode.html" class="external-link">tidygeocoder::geocode()</a></code>. <code>full_results = TRUE</code>
 is requested automatically so scores are available; pass
 <code>full_results = FALSE</code> to opt out (which also disables score gating).</p></dd>
+
+
+<dt id="arg-cache">cache<a class="anchor" aria-label="anchor" href="#arg-cache"></a></dt>
+<dd><p>Optional <code><a href="locatr_cache.html">locatr_cache()</a></code>. When supplied, the name lookup for a
+given query (under the same region extent) is served from the cache,
+including its cached score and address type, instead of re-querying.</p></dd>
+
+
+<dt id="arg-refresh">refresh<a class="anchor" aria-label="anchor" href="#arg-refresh"></a></dt>
+<dd><p>If <code>TRUE</code>, ignore cached entries and re-query, overwriting
+them. Defaults to <code>FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

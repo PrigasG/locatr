@@ -15,7 +15,9 @@ geocode_by_name(
   bbox = region_bbox("NJ"),
   min_score = 90,
   accept_types = c("PointAddress", "Subaddress", "StreetAddress"),
-  ...
+  ...,
+  cache = NULL,
+  refresh = FALSE
 )
 ```
 
@@ -55,6 +57,19 @@ geocode_by_name(
   `full_results = TRUE` is requested automatically so scores are
   available; pass `full_results = FALSE` to opt out (which also disables
   score gating).
+
+- cache:
+
+  Optional
+  [`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md).
+  When supplied, the name lookup for a given query (under the same
+  region extent) is served from the cache, including its cached score
+  and address type, instead of re-querying.
+
+- refresh:
+
+  If `TRUE`, ignore cached entries and re-query, overwriting them.
+  Defaults to `FALSE`.
 
 ## Value
 

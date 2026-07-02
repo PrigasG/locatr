@@ -105,3 +105,49 @@ final <- with_geography %>%
 `final` is ready for Tableau, GIS joins, or a reusable reference table,
 and every row carries the audit columns that explain how its coordinate
 was produced.
+
+## 5. Reproducible runs and provenance
+
+Because the cascade calls external services, reuse a
+[`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+to make a run reproducible and cheap to repeat:
+
+``` r
+
+cache <- locatr_cache("geocode_cache.rds")  # omit the path for a memory-only cache
+
+geocoded <- geocode_records(cleaned, cache = cache)
+
+# a repeat run replays cached coordinates instead of re-querying
+geocoded_again <- geocode_records(cleaned, cache = cache)
+
+cache_info(cache)
+```
+
+The cache is keyed by the exact query and request parameters and stores
+one row per candidate result (with a no-match sentinel so misses replay
+too). Pass `refresh = TRUE` to re-query and overwrite. Nothing is
+written to disk unless you give
+[`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+a path.
+
+Every
+[`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md)
+result also carries a run manifest and two per-row provenance columns:
+
+``` r
+
+geocode_provenance(geocoded)
+
+geocoded[, c("record_id", "placed_at", "cache_status")]
+```
+
+`cache_status` is `fresh`, `cached`, `reference`, `manual`, or
+`unplaced`, and `placed_at` is when the coordinate actually entered the
+output (the cached timestamp for cached rows, not the current run). Both
+columns are carried into
+[`export_location_crosswalk()`](https://prigasg.github.io/locatr/reference/export_location_crosswalk.md).
+The manifest is attached as an attribute, so read it with
+[`geocode_provenance()`](https://prigasg.github.io/locatr/reference/geocode_provenance.md)
+right after the run, before any later data-frame operation that might
+drop attributes.

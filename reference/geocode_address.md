@@ -23,7 +23,9 @@ geocode_address(
   geography_shapes = NULL,
   bbox = NULL,
   quiet = TRUE,
-  show_progress = interactive()
+  show_progress = interactive(),
+  cache = NULL,
+  refresh = FALSE
 )
 ```
 
@@ -92,6 +94,19 @@ geocode_address(
   If `TRUE`, print short progress messages while the lookup runs.
   Defaults to
   [`interactive()`](https://rdrr.io/r/base/interactive.html).
+
+- cache:
+
+  Optional
+  [`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+  object. When supplied, the ArcGIS candidate lookup for a given query
+  is served from the cache on repeat calls (and replayable offline)
+  instead of re-hitting the service.
+
+- refresh:
+
+  If `TRUE`, bypass any cached entry for this query and re-query the
+  service, overwriting the cached result. Defaults to `FALSE`.
 
 ## Value
 

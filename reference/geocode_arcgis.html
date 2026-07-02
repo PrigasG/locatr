@@ -58,7 +58,14 @@ discarded before coordinates are coalesced back into <code>latitude</code>/<code
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">geocode_arcgis</span><span class="op">(</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"arcgis"</span>, bbox <span class="op">=</span> <span class="fu"><a href="region_bbox.html">region_bbox</a></span><span class="op">(</span><span class="st">"NJ"</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">geocode_arcgis</span><span class="op">(</span></span>
+<span>  <span class="va">data</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"arcgis"</span>,</span>
+<span>  bbox <span class="op">=</span> <span class="fu"><a href="region_bbox.html">region_bbox</a></span><span class="op">(</span><span class="st">"NJ"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span>,</span>
+<span>  cache <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  refresh <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -82,6 +89,17 @@ discarded before coordinates are coalesced back into <code>latitude</code>/<code
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Passed through to <code><a href="https://jessecambon.github.io/tidygeocoder/reference/geocode.html" class="external-link">tidygeocoder::geocode()</a></code>.</p></dd>
+
+
+<dt id="arg-cache">cache<a class="anchor" aria-label="anchor" href="#arg-cache"></a></dt>
+<dd><p>Optional <code><a href="locatr_cache.html">locatr_cache()</a></code>. When supplied, the ArcGIS lookup for
+a given <code>full_address_clean</code> (under the same region extent) is served from
+the cache instead of re-querying.</p></dd>
+
+
+<dt id="arg-refresh">refresh<a class="anchor" aria-label="anchor" href="#arg-refresh"></a></dt>
+<dd><p>If <code>TRUE</code>, ignore cached entries and re-query, overwriting
+them. Defaults to <code>FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -20,7 +20,9 @@ geocode_records(
   bbox = region_bbox("NJ"),
   name_min_score = 90,
   name_accept_types = c("PointAddress", "Subaddress", "StreetAddress"),
-  verbose = TRUE
+  verbose = TRUE,
+  cache = NULL,
+  refresh = FALSE
 )
 ```
 
@@ -70,6 +72,19 @@ geocode_records(
 - verbose:
 
   Whether to print a per-tier match tally.
+
+- cache:
+
+  Optional
+  [`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+  shared across the network tiers (Census, ArcGIS, name lookup), so
+  repeated addresses are served from the cache and a re-run reproduces
+  coordinates without re-querying.
+
+- refresh:
+
+  If `TRUE`, ignore cached entries and re-query every tier, overwriting
+  the cache. Defaults to `FALSE`.
 
 ## Value
 

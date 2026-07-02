@@ -128,6 +128,19 @@ Rows with missing ZIP remain geocodable. Rows missing address/city, PO
 boxes, placeholder addresses, and test records still go to manual
 review.
 
+To catch data-entry errors the geocoder would silently accept, run
+[`flag_field_conflicts()`](https://prigasg.github.io/locatr/reference/flag_field_conflicts.md):
+it flags a ZIP that cannot belong to the stated state (a conservative
+USPS-region check that never false-flags) and, given a stated county
+column, a county that disagrees with the geocoded `location_county`. It
+adds `zip_state_conflict`, `county_conflict`, and a combined
+`field_conflict` column without changing any coordinate.
+
+``` r
+
+checked <- flag_field_conflicts(with_geography, stated_county = "County")
+```
+
 ## Quick single-address lookup
 
 To check one address interactively - no data frame required - use
@@ -178,18 +191,23 @@ if (interactive()) {
 ## No-code web app
 
 For users who would rather not write R, the same pipeline is available
-as a Shiny app: upload a CSV/Excel/Parquet file, geocode it, and
-download the geocoded records immediately as CSV, Excel, or Parquet. If
-you also need county/locality fields, attach geography from Census
-TIGER/Line or an uploaded shapefile first, then download the geography
-crosswalk. The download step lets you remove columns before exporting.
-In the app, Unique ID and ZIP are optional: leave them as `(auto)` /
-`(none)` when your file only has address and city.
+as a Shiny app: upload a CSV/Excel/Parquet file, geocode it with a
+session cache, and download the geocoded records immediately as CSV,
+Excel, or Parquet. If you also need county/locality fields, attach
+geography from Census TIGER/Line or an uploaded shapefile first,
+optionally append tract/ZCTA/district/school-district GEOIDs, then
+download the geography crosswalk. The app also exposes field conflict
+flags, cache/provenance summaries, and a downloadable Markdown audit
+report with a methods paragraph. The download step lets you remove
+columns before exporting. In the app, Unique ID and ZIP are optional:
+leave them as `(auto)` / `(none)` when your file only has address and
+city.
 
 ``` r
 
 install.packages(c("shiny", "bslib", "DT", "leaflet",
-                   "readxl", "writexl", "arrow"))
+                   "readr", "readxl", "tibble", "writexl",
+                   "arrow", "tigris"))
 run_locatr_app()
 ```
 
@@ -231,9 +249,90 @@ locality, or low-score hits keep coordinates for reviewer context but
 remain in `needs_manual_review`. The Shiny app exposes the name score
 threshold and the address types that are allowed to pass without review.
 
+## Reproducible Runs
+
+Geocoding hits external services, so a run is only reproducible if you
+can replay it without re-querying. Pass a
+[`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+to
+[`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md)
+(it also works on the single tiers and on
+[`geocode_address()`](https://prigasg.github.io/locatr/reference/geocode_address.md)):
+repeated addresses are served from the cache, and a later run reproduces
+the same coordinates offline instead of re-hitting Census or ArcGIS.
+
+``` r
+
+cache <- locatr_cache("nj_geocode_cache.rds")  # persistent; omit the path for memory-only
+
+geocoded <- geocode_records(cleaned, bbox = region_bbox("NJ"), cache = cache)
+
+# a second run reuses the cache - no network for addresses already placed
+geocoded_again <- geocode_records(cleaned, bbox = region_bbox("NJ"), cache = cache)
+
+cache_info(cache)   # rows, distinct keys, per-method counts, file size, oldest/newest
+```
+
+The cache stores one row per candidate result (plus a no-match sentinel,
+so misses are replayed too), keyed by the exact query and request
+parameters. Pass `refresh = TRUE` to force a re-query and overwrite.
+Nothing is written to disk unless you give
+[`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+a path.
+
+Every
+[`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md)
+result also carries a run manifest and two per-row provenance columns:
+
+``` r
+
+geocode_provenance(geocoded)  # run id, timestamp, versions, tiers, cache activity, status counts
+
+geocoded[, c("record_id", "placed_at", "cache_status")]
+```
+
+`cache_status` is one of `fresh` (geocoded this run), `cached` (the
+cache already held the coordinate before this run), `reference`,
+`manual`, or `unplaced`. `placed_at` records when a coordinate actually
+entered the output - the cached timestamp for cached rows, or an
+explicit reference/override timestamp when your data carries one, rather
+than the current run time. Both columns flow through
+[`export_location_crosswalk()`](https://prigasg.github.io/locatr/reference/export_location_crosswalk.md).
+The manifest is attached as an attribute
+(`attr(geocoded, "locatr_run")`), so read it with
+[`geocode_provenance()`](https://prigasg.github.io/locatr/reference/geocode_provenance.md)
+directly off the
+[`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md)
+result, before further data-frame operations that might drop attributes.
+
+For a shareable summary,
+[`geocode_report()`](https://prigasg.github.io/locatr/reference/geocode_report.md)
+rolls the manifest and audit columns into counts by review status,
+placing tier, and cache status, a `match_confidence` summary, and an
+auto-generated plain-language methods paragraph for a report or paper.
+Print it, or write Markdown with `file =`:
+
+``` r
+
+geocode_report(geocoded)                      # printed summary + methods paragraph
+geocode_report(geocoded, file = "run.md")     # Markdown report
+```
+
 ## Regions And Geography
 
-For geocoding, validation, and ArcGIS search extent, pass a bbox:
+[`region_bbox()`](https://prigasg.github.io/locatr/reference/region_bbox.md)
+ships coarse guard boxes for every US state and `DC` (case-insensitive),
+so validation works out of the box beyond NJ:
+
+``` r
+
+geocoded <- geocode_records(cleaned, bbox = region_bbox("CA"))
+```
+
+These presets are deliberately generous sanity boxes, not precise
+boundaries. For a tighter or non-state region, pass your own bbox, or
+derive one from an `sf` layer with
+[`bbox_from_sf()`](https://prigasg.github.io/locatr/reference/bbox_from_sf.md):
 
 ``` r
 
@@ -325,6 +424,21 @@ for point-in-polygon joins against your own boundary layer, or
 when your records and geography share a code column such as ZIP, FIPS,
 or GEOID.
 
+For analysis and policy geographies beyond county/municipality - census
+tract, block group, ZCTA, congressional and state legislative districts,
+or unified school districts -
+[`add_census_geographies()`](https://prigasg.github.io/locatr/reference/add_census_geographies.md)
+attaches any combination in one call, each as a `<level>_geoid` /
+`<level>_name` pair:
+
+``` r
+
+enriched <- add_census_geographies(
+  geocoded, state = "NJ",
+  levels = c("tract", "congressional_district", "school_district")
+)
+```
+
 # Package index
 
 ## Clean and flag
@@ -333,6 +447,8 @@ or GEOID.
   : Clean and standardise address fields
 - [`flag_bad_addresses()`](https://prigasg.github.io/locatr/reference/flag_bad_addresses.md)
   : Flag addresses that should not be blindly geocoded
+- [`flag_field_conflicts()`](https://prigasg.github.io/locatr/reference/flag_field_conflicts.md)
+  : Flag cross-field conflicts in location data
 
 ## Geocode and validate
 
@@ -369,6 +485,8 @@ or GEOID.
   : Add county and municipality fields from boundary polygons
 - [`add_muni_from_key()`](https://prigasg.github.io/locatr/reference/add_muni_from_key.md)
   : Add county and municipality fields by joining on a shared key
+- [`add_census_geographies()`](https://prigasg.github.io/locatr/reference/add_census_geographies.md)
+  : Attach multiple Census geography levels to geocoded points
 - [`backfill_from_reference()`](https://prigasg.github.io/locatr/reference/backfill_from_reference.md)
   : Backfill verified coordinates from a trusted reference table (Tier
   0)
@@ -391,6 +509,22 @@ or GEOID.
   : Suggest a Census geography level for a state
 - [`compare_geocode_runs()`](https://prigasg.github.io/locatr/reference/compare_geocode_runs.md)
   : Compare two geocoding runs
+
+## Reproducibility
+
+- [`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+  [`print(`*`<locatr_cache>`*`)`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+  : Create a locatr response cache
+- [`cache_info()`](https://prigasg.github.io/locatr/reference/cache_info.md)
+  : Summarise a locatr cache
+- [`cache_clear()`](https://prigasg.github.io/locatr/reference/cache_clear.md)
+  : Clear a locatr cache
+- [`geocode_provenance()`](https://prigasg.github.io/locatr/reference/geocode_provenance.md)
+  [`print(`*`<locatr_provenance>`*`)`](https://prigasg.github.io/locatr/reference/geocode_provenance.md)
+  : Read the provenance manifest from a geocoding run
+- [`geocode_report()`](https://prigasg.github.io/locatr/reference/geocode_report.md)
+  [`print(`*`<locatr_report>`*`)`](https://prigasg.github.io/locatr/reference/geocode_report.md)
+  : Summarise a geocoding run into a provenance report
 
 ## App
 

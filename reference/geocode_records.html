@@ -63,7 +63,9 @@ unplaced.</p>
 <span>  bbox <span class="op">=</span> <span class="fu"><a href="region_bbox.html">region_bbox</a></span><span class="op">(</span><span class="st">"NJ"</span><span class="op">)</span>,</span>
 <span>  name_min_score <span class="op">=</span> <span class="fl">90</span>,</span>
 <span>  name_accept_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PointAddress"</span>, <span class="st">"Subaddress"</span>, <span class="st">"StreetAddress"</span><span class="op">)</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cache <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  refresh <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -107,6 +109,17 @@ to pass without review. Passed to <code><a href="geocode_by_name.html">geocode_b
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Whether to print a per-tier match tally.</p></dd>
+
+
+<dt id="arg-cache">cache<a class="anchor" aria-label="anchor" href="#arg-cache"></a></dt>
+<dd><p>Optional <code><a href="locatr_cache.html">locatr_cache()</a></code> shared across the network tiers
+(Census, ArcGIS, name lookup), so repeated addresses are served from the
+cache and a re-run reproduces coordinates without re-querying.</p></dd>
+
+
+<dt id="arg-refresh">refresh<a class="anchor" aria-label="anchor" href="#arg-refresh"></a></dt>
+<dd><p>If <code>TRUE</code>, ignore cached entries and re-query every tier,
+overwriting the cache. Defaults to <code>FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

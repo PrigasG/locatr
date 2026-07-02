@@ -153,6 +153,41 @@ share a code column.</p>
 reference table, and every row carries the audit columns that explain
 how its coordinate was produced.</p>
 </div>
+<div class="section level2">
+<h2 id="reproducible-runs-and-provenance">5. Reproducible runs and provenance<a class="anchor" aria-label="anchor" href="#reproducible-runs-and-provenance"></a>
+</h2>
+<p>Because the cascade calls external services, reuse a
+<code><a href="../reference/locatr_cache.html">locatr_cache()</a></code> to make a run reproducible and cheap to
+repeat:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cache</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/locatr_cache.html">locatr_cache</a></span><span class="op">(</span><span class="st">"geocode_cache.rds"</span><span class="op">)</span>  <span class="co"># omit the path for a memory-only cache</span></span>
+<span></span>
+<span><span class="va">geocoded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span>, cache <span class="op">=</span> <span class="va">cache</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># a repeat run replays cached coordinates instead of re-querying</span></span>
+<span><span class="va">geocoded_again</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span>, cache <span class="op">=</span> <span class="va">cache</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/cache_info.html">cache_info</a></span><span class="op">(</span><span class="va">cache</span><span class="op">)</span></span></code></pre></div>
+<p>The cache is keyed by the exact query and request parameters and
+stores one row per candidate result (with a no-match sentinel so misses
+replay too). Pass <code>refresh = TRUE</code> to re-query and overwrite.
+Nothing is written to disk unless you give <code><a href="../reference/locatr_cache.html">locatr_cache()</a></code> a
+path.</p>
+<p>Every <code><a href="../reference/geocode_records.html">geocode_records()</a></code> result also carries a run
+manifest and two per-row provenance columns:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/geocode_provenance.html">geocode_provenance</a></span><span class="op">(</span><span class="va">geocoded</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">geocoded</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"record_id"</span>, <span class="st">"placed_at"</span>, <span class="st">"cache_status"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<p><code>cache_status</code> is <code>fresh</code>, <code>cached</code>,
+<code>reference</code>, <code>manual</code>, or <code>unplaced</code>,
+and <code>placed_at</code> is when the coordinate actually entered the
+output (the cached timestamp for cached rows, not the current run). Both
+columns are carried into <code><a href="../reference/export_location_crosswalk.html">export_location_crosswalk()</a></code>. The
+manifest is attached as an attribute, so read it with
+<code><a href="../reference/geocode_provenance.html">geocode_provenance()</a></code> right after the run, before any later
+data-frame operation that might drop attributes.</p>
+</div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

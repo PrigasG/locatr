@@ -2,10 +2,12 @@
 
 Runs the bundled web app (the same one published as a Hugging Face
 Space): upload a CSV/Excel/Parquet file, geocode it with the locatr
-cascade, download the geocoded records directly, or optionally attach
-local geography from Census TIGER/Line/an uploaded shapefile before
-downloading a crosswalk. The download step can remove selected columns
-before export. The app is for demonstration and light interactive use;
+cascade and a session cache, download the geocoded records directly, or
+optionally attach local geography from Census TIGER/Line/an uploaded
+shapefile before downloading a crosswalk. The app can add Census policy
+geographies, flag ZIP/state and county conflicts, remove selected
+columns before export, and download a provenance/reporting bundle for
+audit records. The app is for demonstration and light interactive use;
 production pipelines should call the package functions directly.
 
 ## Usage

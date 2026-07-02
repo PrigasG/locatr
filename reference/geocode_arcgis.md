@@ -11,7 +11,14 @@ coalesced back into `latitude`/`longitude`.
 ## Usage
 
 ``` r
-geocode_arcgis(data, method = "arcgis", bbox = region_bbox("NJ"), ...)
+geocode_arcgis(
+  data,
+  method = "arcgis",
+  bbox = region_bbox("NJ"),
+  ...,
+  cache = NULL,
+  refresh = FALSE
+)
 ```
 
 ## Arguments
@@ -37,6 +44,19 @@ geocode_arcgis(data, method = "arcgis", bbox = region_bbox("NJ"), ...)
 
   Passed through to
   [`tidygeocoder::geocode()`](https://jessecambon.github.io/tidygeocoder/reference/geocode.html).
+
+- cache:
+
+  Optional
+  [`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md).
+  When supplied, the ArcGIS lookup for a given `full_address_clean`
+  (under the same region extent) is served from the cache instead of
+  re-querying.
+
+- refresh:
+
+  If `TRUE`, ignore cached entries and re-query, overwriting them.
+  Defaults to `FALSE`.
 
 ## Value
 

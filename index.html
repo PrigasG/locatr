@@ -199,12 +199,15 @@
 <span>  <span class="fu"><a href="reference/clean_addresses.html">clean_addresses</a></span><span class="op">(</span>address <span class="op">=</span> <span class="va">Address</span>, city <span class="op">=</span> <span class="va">City</span>, state <span class="op">=</span> <span class="st">"NJ"</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu"><a href="reference/flag_bad_addresses.html">flag_bad_addresses</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Rows with missing ZIP remain geocodable. Rows missing address/city, PO boxes, placeholder addresses, and test records still go to manual review.</p>
+<p>To catch data-entry errors the geocoder would silently accept, run <code><a href="reference/flag_field_conflicts.html">flag_field_conflicts()</a></code>: it flags a ZIP that cannot belong to the stated state (a conservative USPS-region check that never false-flags) and, given a stated county column, a county that disagrees with the geocoded <code>location_county</code>. It adds <code>zip_state_conflict</code>, <code>county_conflict</code>, and a combined <code>field_conflict</code> column without changing any coordinate.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">checked</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/flag_field_conflicts.html">flag_field_conflicts</a></span><span class="op">(</span><span class="va">with_geography</span>, stated_county <span class="op">=</span> <span class="st">"County"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="quick-single-address-lookup">Quick single-address lookup<a class="anchor" aria-label="anchor" href="#quick-single-address-lookup"></a>
 </h2>
 <p>To check one address interactively - no data frame required - use <code><a href="reference/geocode_address.html">geocode_address()</a></code>. It cleans the text, asks ArcGIS for candidate matches ranked by confidence (highest first), and attaches county/municipality when <code>state</code> is supplied, a candidate state can be inferred, or you provide a geography layer:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/geocode_address.html">geocode_address</a></span><span class="op">(</span><span class="st">"1600 Pennsylvania Ave NW"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># ambiguous street-only searches often need a little location context</span></span>
@@ -219,7 +222,7 @@
 <h2 id="audit-helpers">Audit helpers<a class="anchor" aria-label="anchor" href="#audit-helpers"></a>
 </h2>
 <p>After a run, use the small audit helpers to understand and compare results:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/summarise_geocoding.html">summarise_geocoding</a></span><span class="op">(</span><span class="va">geocoded</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/explain_geocode_result.html">explain_geocode_result</a></span><span class="op">(</span><span class="va">geocoded</span>, row <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/suggest_geography_level.html">suggest_geography_level</a></span><span class="op">(</span><span class="st">"PA"</span><span class="op">)</span></span>
@@ -232,10 +235,11 @@
 <div class="section level2">
 <h2 id="no-code-web-app">No-code web app<a class="anchor" aria-label="anchor" href="#no-code-web-app"></a>
 </h2>
-<p>For users who would rather not write R, the same pipeline is available as a Shiny app: upload a CSV/Excel/Parquet file, geocode it, and download the geocoded records immediately as CSV, Excel, or Parquet. If you also need county/locality fields, attach geography from Census TIGER/Line or an uploaded shapefile first, then download the geography crosswalk. The download step lets you remove columns before exporting. In the app, Unique ID and ZIP are optional: leave them as <code>(auto)</code> / <code>(none)</code> when your file only has address and city.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>For users who would rather not write R, the same pipeline is available as a Shiny app: upload a CSV/Excel/Parquet file, geocode it with a session cache, and download the geocoded records immediately as CSV, Excel, or Parquet. If you also need county/locality fields, attach geography from Census TIGER/Line or an uploaded shapefile first, optionally append tract/ZCTA/district/school-district GEOIDs, then download the geography crosswalk. The app also exposes field conflict flags, cache/provenance summaries, and a downloadable Markdown audit report with a methods paragraph. The download step lets you remove columns before exporting. In the app, Unique ID and ZIP are optional: leave them as <code>(auto)</code> / <code>(none)</code> when your file only has address and city.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shiny"</span>, <span class="st">"bslib"</span>, <span class="st">"DT"</span>, <span class="st">"leaflet"</span>,</span>
-<span>                   <span class="st">"readxl"</span>, <span class="st">"writexl"</span>, <span class="st">"arrow"</span><span class="op">)</span><span class="op">)</span></span>
+<span>                   <span class="st">"readr"</span>, <span class="st">"readxl"</span>, <span class="st">"tibble"</span>, <span class="st">"writexl"</span>,</span>
+<span>                   <span class="st">"arrow"</span>, <span class="st">"tigris"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/run_locatr_app.html">run_locatr_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The app is also published as a Hugging Face Space (Docker): <a href="https://huggingface.co/spaces/Prigas89/locatr_reviewer" class="external-link uri">https://huggingface.co/spaces/Prigas89/locatr_reviewer</a>. The deployment scaffolding lives in <a href="huggingface/"><code>huggingface/</code></a>.</p>
 </div>
@@ -294,10 +298,38 @@
 <p>Name lookup is score-gated when the geocoder returns score/type fields. Precise point-address hits above <code>min_score</code> pass cleanly; fuzzier POI, locality, or low-score hits keep coordinates for reviewer context but remain in <code>needs_manual_review</code>. The Shiny app exposes the name score threshold and the address types that are allowed to pass without review.</p>
 </div>
 <div class="section level2">
+<h2 id="reproducible-runs">Reproducible Runs<a class="anchor" aria-label="anchor" href="#reproducible-runs"></a>
+</h2>
+<p>Geocoding hits external services, so a run is only reproducible if you can replay it without re-querying. Pass a <code><a href="reference/locatr_cache.html">locatr_cache()</a></code> to <code><a href="reference/geocode_records.html">geocode_records()</a></code> (it also works on the single tiers and on <code><a href="reference/geocode_address.html">geocode_address()</a></code>): repeated addresses are served from the cache, and a later run reproduces the same coordinates offline instead of re-hitting Census or ArcGIS.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cache</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/locatr_cache.html">locatr_cache</a></span><span class="op">(</span><span class="st">"nj_geocode_cache.rds"</span><span class="op">)</span>  <span class="co"># persistent; omit the path for memory-only</span></span>
+<span></span>
+<span><span class="va">geocoded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span>, bbox <span class="op">=</span> <span class="fu"><a href="reference/region_bbox.html">region_bbox</a></span><span class="op">(</span><span class="st">"NJ"</span><span class="op">)</span>, cache <span class="op">=</span> <span class="va">cache</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># a second run reuses the cache - no network for addresses already placed</span></span>
+<span><span class="va">geocoded_again</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span>, bbox <span class="op">=</span> <span class="fu"><a href="reference/region_bbox.html">region_bbox</a></span><span class="op">(</span><span class="st">"NJ"</span><span class="op">)</span>, cache <span class="op">=</span> <span class="va">cache</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/cache_info.html">cache_info</a></span><span class="op">(</span><span class="va">cache</span><span class="op">)</span>   <span class="co"># rows, distinct keys, per-method counts, file size, oldest/newest</span></span></code></pre></div>
+<p>The cache stores one row per candidate result (plus a no-match sentinel, so misses are replayed too), keyed by the exact query and request parameters. Pass <code>refresh = TRUE</code> to force a re-query and overwrite. Nothing is written to disk unless you give <code><a href="reference/locatr_cache.html">locatr_cache()</a></code> a path.</p>
+<p>Every <code><a href="reference/geocode_records.html">geocode_records()</a></code> result also carries a run manifest and two per-row provenance columns:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/geocode_provenance.html">geocode_provenance</a></span><span class="op">(</span><span class="va">geocoded</span><span class="op">)</span>  <span class="co"># run id, timestamp, versions, tiers, cache activity, status counts</span></span>
+<span></span>
+<span><span class="va">geocoded</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"record_id"</span>, <span class="st">"placed_at"</span>, <span class="st">"cache_status"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<p><code>cache_status</code> is one of <code>fresh</code> (geocoded this run), <code>cached</code> (the cache already held the coordinate before this run), <code>reference</code>, <code>manual</code>, or <code>unplaced</code>. <code>placed_at</code> records when a coordinate actually entered the output - the cached timestamp for cached rows, or an explicit reference/override timestamp when your data carries one, rather than the current run time. Both columns flow through <code><a href="reference/export_location_crosswalk.html">export_location_crosswalk()</a></code>. The manifest is attached as an attribute (<code>attr(geocoded, "locatr_run")</code>), so read it with <code><a href="reference/geocode_provenance.html">geocode_provenance()</a></code> directly off the <code><a href="reference/geocode_records.html">geocode_records()</a></code> result, before further data-frame operations that might drop attributes.</p>
+<p>For a shareable summary, <code><a href="reference/geocode_report.html">geocode_report()</a></code> rolls the manifest and audit columns into counts by review status, placing tier, and cache status, a <code>match_confidence</code> summary, and an auto-generated plain-language methods paragraph for a report or paper. Print it, or write Markdown with <code>file =</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/geocode_report.html">geocode_report</a></span><span class="op">(</span><span class="va">geocoded</span><span class="op">)</span>                      <span class="co"># printed summary + methods paragraph</span></span>
+<span><span class="fu"><a href="reference/geocode_report.html">geocode_report</a></span><span class="op">(</span><span class="va">geocoded</span>, file <span class="op">=</span> <span class="st">"run.md"</span><span class="op">)</span>     <span class="co"># Markdown report</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="regions-and-geography">Regions And Geography<a class="anchor" aria-label="anchor" href="#regions-and-geography"></a>
 </h2>
-<p>For geocoding, validation, and ArcGIS search extent, pass a bbox:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p><code><a href="reference/region_bbox.html">region_bbox()</a></code> ships coarse guard boxes for every US state and <code>DC</code> (case-insensitive), so validation works out of the box beyond NJ:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">geocoded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span>, bbox <span class="op">=</span> <span class="fu"><a href="reference/region_bbox.html">region_bbox</a></span><span class="op">(</span><span class="st">"CA"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>These presets are deliberately generous sanity boxes, not precise boundaries. For a tighter or non-state region, pass your own bbox, or derive one from an <code>sf</code> layer with <code><a href="reference/bbox_from_sf.html">bbox_from_sf()</a></code>:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">custom_bbox</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>lat_min <span class="op">=</span> <span class="fl">38.0</span>, lat_max <span class="op">=</span> <span class="fl">39.0</span>, lon_min <span class="op">=</span> <span class="op">-</span><span class="fl">77.5</span>, lon_max <span class="op">=</span> <span class="op">-</span><span class="fl">76.0</span><span class="op">)</span></span>
 <span><span class="va">geocoded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/geocode_records.html">geocode_records</a></span><span class="op">(</span><span class="va">cleaned</span>, bbox <span class="op">=</span> <span class="va">custom_bbox</span><span class="op">)</span></span></code></pre></div>
 <p>For stricter validation, pass an <code>sf</code> boundary polygon with <code>boundary =</code>.</p>
@@ -306,7 +338,7 @@
 <h2 id="local-geography-nj-municipalities">Local Geography (NJ Municipalities)<a class="anchor" aria-label="anchor" href="#local-geography-nj-municipalities"></a>
 </h2>
 <p>In production, <code>location_locality</code> and <code>location_county</code> come from a spatial join against an authoritative NJ municipal boundary layer, not from the geocoder response or Census reverse-geocoding. The workflow is: load boundaries, derive a bbox, geocode, validate, convert to <code>sf</code> points, spatially join to the polygons, and write <code>location_county</code>, <code>location_locality</code>, <code>geography_match_status</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">munis</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_read.html" class="external-link">st_read</a></span><span class="op">(</span><span class="st">"path/to/Municipal_Boundaries_of_NJ.shp"</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/valid.html" class="external-link">st_make_valid</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/transmute.html" class="external-link">transmute</a></span><span class="op">(</span>location_county <span class="op">=</span> <span class="va">COUNTY</span>, location_locality <span class="op">=</span> <span class="va">MUN</span><span class="op">)</span></span>
@@ -326,10 +358,10 @@
 <h2 id="any-state-with-census-tigerline">Any State, With Census TIGER/Line<a class="anchor" aria-label="anchor" href="#any-state-with-census-tigerline"></a>
 </h2>
 <p><code><a href="reference/add_county_muni.html">add_county_muni()</a></code> is the shortest path when Census TIGER/Line boundaries are good enough for your workflow:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_county_muni.html">add_county_muni</a></span><span class="op">(</span><span class="va">geocoded</span>, state <span class="op">=</span> <span class="st">"PA"</span>, geography <span class="op">=</span> <span class="st">"county_subdivision"</span><span class="op">)</span></span></code></pre></div>
 <p>Under the hood, <code><a href="reference/build_local_geography.html">build_local_geography()</a></code> pulls Census boundaries through <code>tigris</code> and standardises them to the <code>location_county</code> / <code>location_locality</code> schema, plus stable join fields when the source provides them: <code>county_code</code>, <code>county_fips</code>, <code>municipality_code</code>, <code>municipality_geoid</code>, <code>municipality_name_standard</code>, <code>municipality_type</code>, and <code>muni_join_key</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">areas</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_local_geography.html">build_local_geography</a></span><span class="op">(</span>state <span class="op">=</span> <span class="st">"PA"</span>, geography <span class="op">=</span> <span class="st">"county_subdivision"</span><span class="op">)</span></span>
 <span><span class="va">bbox</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/bbox_from_sf.html">bbox_from_sf</a></span><span class="op">(</span><span class="va">areas</span><span class="op">)</span></span>
 <span></span>
@@ -343,6 +375,12 @@
 <span><span class="op">)</span></span></code></pre></div>
 <p>Pick <code>geography</code> for the state: <code>county</code> is easy everywhere; <code>county_subdivision</code> maps well to townships/municipalities in NJ, PA, NY, and New England; <code>place</code> covers incorporated places/CDPs but misses townships and many unincorporated areas; <code>tract</code> uses tract GEOIDs. For high-stakes, state-specific reporting where “municipality” has legal meaning, use an official state GIS layer and pass it directly. <code>Muni Key</code> is kept as a readable fallback, but production joins should prefer <code>muni_join_key</code>, <code>municipality_geoid</code>, or another official code from your boundary source.</p>
 <p>Use <code><a href="reference/add_muni_from_shapes.html">add_muni_from_shapes()</a></code> for point-in-polygon joins against your own boundary layer, or <code><a href="reference/add_muni_from_key.html">add_muni_from_key()</a></code> when your records and geography share a code column such as ZIP, FIPS, or GEOID.</p>
+<p>For analysis and policy geographies beyond county/municipality - census tract, block group, ZCTA, congressional and state legislative districts, or unified school districts - <code><a href="reference/add_census_geographies.html">add_census_geographies()</a></code> attaches any combination in one call, each as a <code>&lt;level&gt;_geoid</code> / <code>&lt;level&gt;_name</code> pair:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">enriched</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_census_geographies.html">add_census_geographies</a></span><span class="op">(</span></span>
+<span>  <span class="va">geocoded</span>, state <span class="op">=</span> <span class="st">"NJ"</span>,</span>
+<span>  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"tract"</span>, <span class="st">"congressional_district"</span>, <span class="st">"school_district"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

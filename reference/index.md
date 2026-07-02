@@ -6,6 +6,8 @@
   : Clean and standardise address fields
 - [`flag_bad_addresses()`](https://prigasg.github.io/locatr/reference/flag_bad_addresses.md)
   : Flag addresses that should not be blindly geocoded
+- [`flag_field_conflicts()`](https://prigasg.github.io/locatr/reference/flag_field_conflicts.md)
+  : Flag cross-field conflicts in location data
 
 ## Geocode and validate
 
@@ -42,6 +44,8 @@
   : Add county and municipality fields from boundary polygons
 - [`add_muni_from_key()`](https://prigasg.github.io/locatr/reference/add_muni_from_key.md)
   : Add county and municipality fields by joining on a shared key
+- [`add_census_geographies()`](https://prigasg.github.io/locatr/reference/add_census_geographies.md)
+  : Attach multiple Census geography levels to geocoded points
 - [`backfill_from_reference()`](https://prigasg.github.io/locatr/reference/backfill_from_reference.md)
   : Backfill verified coordinates from a trusted reference table (Tier
   0)
@@ -64,6 +68,22 @@
   : Suggest a Census geography level for a state
 - [`compare_geocode_runs()`](https://prigasg.github.io/locatr/reference/compare_geocode_runs.md)
   : Compare two geocoding runs
+
+## Reproducibility
+
+- [`locatr_cache()`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+  [`print(`*`<locatr_cache>`*`)`](https://prigasg.github.io/locatr/reference/locatr_cache.md)
+  : Create a locatr response cache
+- [`cache_info()`](https://prigasg.github.io/locatr/reference/cache_info.md)
+  : Summarise a locatr cache
+- [`cache_clear()`](https://prigasg.github.io/locatr/reference/cache_clear.md)
+  : Clear a locatr cache
+- [`geocode_provenance()`](https://prigasg.github.io/locatr/reference/geocode_provenance.md)
+  [`print(`*`<locatr_provenance>`*`)`](https://prigasg.github.io/locatr/reference/geocode_provenance.md)
+  : Read the provenance manifest from a geocoding run
+- [`geocode_report()`](https://prigasg.github.io/locatr/reference/geocode_report.md)
+  [`print(`*`<locatr_report>`*`)`](https://prigasg.github.io/locatr/reference/geocode_report.md)
+  : Summarise a geocoding run into a provenance report
 
 ## App
 
