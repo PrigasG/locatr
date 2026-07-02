@@ -2020,12 +2020,12 @@ clean_addresses <- function(data, id = NULL, address, city, zip = NULL,
   name_q <- rlang::enquo(name)
   data <- .protect_existing_full_address_clean(data)
 
-  record_id <- if (!quo_is_null(id_q)) {
+  record_id <- if (!rlang::quo_is_null(id_q)) {
     as.character(rlang::eval_tidy(id_q, data))
   } else {
     as.character(seq_len(nrow(data)))
   }
-  zip_raw <- if (!quo_is_null(zip_q)) {
+  zip_raw <- if (!rlang::quo_is_null(zip_q)) {
     as.character(rlang::eval_tidy(zip_q, data))
   } else {
     rep(NA_character_, nrow(data))
@@ -2084,7 +2084,7 @@ clean_addresses <- function(data, id = NULL, address, city, zip = NULL,
       )
     )
 
-  if (!quo_is_null(name_q)) {
+  if (!rlang::quo_is_null(name_q)) {
     out <- out %>% dplyr::mutate(record_name = as.character(!!name_q))
   } else {
     out$record_name <- NA_character_

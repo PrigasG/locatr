@@ -3316,13 +3316,13 @@
   },
   "files": {
     "app.R": {
-      "checksum": "4c78eca12c6e0ad9052892ad60b26a07"
+      "checksum": "ffbc6e50bce8244a9c9f60cb9cac1722"
     },
     "DESCRIPTION": {
       "checksum": "be3807a865b8403900703c8a46bef79f"
     },
     "locatr-bundle.R": {
-      "checksum": "7489f0d14b321087e7862ce98b2e7080"
+      "checksum": "773588ba48f36cc54de5cab37789fa67"
     },
     "locatr-package/DESCRIPTION": {
       "checksum": "f1cd8196075ad293b8276f17411f36f9"
