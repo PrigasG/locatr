@@ -7,6 +7,10 @@ test_that("bundled Shiny app has deployment metadata", {
   expect_true(file.exists(file.path(app_dir, "app.R")))
   expect_true(file.exists(file.path(app_dir, "DESCRIPTION")))
   expect_true(file.exists(file.path(app_dir, "manifest.json")))
+  expect_true(file.exists(file.path(app_dir, "locatr-package", "DESCRIPTION")))
+  expect_true(file.exists(file.path(app_dir, "locatr-package", "NAMESPACE")))
+  expect_gt(length(list.files(file.path(app_dir, "locatr-package", "R"),
+                              pattern = "[.]R$")), 10)
 
   app_desc <- read.dcf(file.path(app_dir, "DESCRIPTION"))
   imports <- paste(app_desc[1, "Imports"], collapse = "\n")

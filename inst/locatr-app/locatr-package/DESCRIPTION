@@ -1,0 +1,51 @@
+Package: locatr
+Title: Audit-Ready Geocoding and Local Geography for Messy Location Data
+Version: 0.1.0
+Authors@R:
+    person("George", "Arthur", , "prigasgenthian48@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-1975-1459"))
+Description: Cleans, geocodes, validates, reviews, and exports messy location
+    address data supplied by the user. The package sits on top of
+    'tidygeocoder': it calls geocoding services, rejects implausible coordinates
+    with configurable region guards, applies fallback name/address matching,
+    joins points to optional local geography with 'sf', and records an audit
+    trail showing how each coordinate was produced. Outputs are designed for
+    manual review, dashboards, and reusable location crosswalks.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.1.0)
+Imports:
+    datasets,
+    dplyr (>= 1.1.0),
+    magrittr,
+    readr,
+    rlang (>= 1.1.0),
+    sf,
+    stats,
+    stringr,
+    tibble,
+    tidygeocoder,
+    utils
+Suggests:
+    testthat (>= 3.1.7),
+    knitr,
+    rmarkdown,
+    tigris,
+    pkgdown,
+    shiny,
+    bslib,
+    DT,
+    leaflet,
+    readxl,
+    writexl,
+    arrow,
+    httr,
+    jsonlite
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+Config/Needs/website: pkgdown
+URL: https://prigasg.github.io/locatr/, https://github.com/PrigasG/locatr
+BugReports: https://github.com/PrigasG/locatr/issues

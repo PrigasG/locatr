@@ -3316,10 +3316,91 @@
   },
   "files": {
     "app.R": {
-      "checksum": "45e40bee95e08664385328d7f1be3626"
+      "checksum": "507878d88b68c7299b88842b68313550"
     },
     "DESCRIPTION": {
       "checksum": "be3807a865b8403900703c8a46bef79f"
+    },
+    "locatr-package/DESCRIPTION": {
+      "checksum": "f1cd8196075ad293b8276f17411f36f9"
+    },
+    "locatr-package/LICENSE": {
+      "checksum": "43b82d5700742e7555b11fc7a196d092"
+    },
+    "locatr-package/NAMESPACE": {
+      "checksum": "c38fc01ae526121a3b9100317f103215"
+    },
+    "locatr-package/R/add-census-geographies.R": {
+      "checksum": "b9b621174e2090c138d51955b54e4fb6"
+    },
+    "locatr-package/R/add-local-geography.R": {
+      "checksum": "60888ab759364d238d5455394a82dfb6"
+    },
+    "locatr-package/R/add-muni-from-key.R": {
+      "checksum": "09a30db5d6024520e61e6cf96dcf6edd"
+    },
+    "locatr-package/R/audit-helpers.R": {
+      "checksum": "6391b68e77966bf72b575a0b37480329"
+    },
+    "locatr-package/R/backfill-from-reference.R": {
+      "checksum": "9b6d8fe6d072613c46afaccc4c8332ed"
+    },
+    "locatr-package/R/build-local-geography.R": {
+      "checksum": "717d1c5d44cb9e2e72a85d718df7a239"
+    },
+    "locatr-package/R/cache.R": {
+      "checksum": "0e373fb0e3adfaf44b6d12e7f64fa396"
+    },
+    "locatr-package/R/clean-address.R": {
+      "checksum": "57436461fb527d5005ad2b74cfc1434c"
+    },
+    "locatr-package/R/export-location-crosswalk.R": {
+      "checksum": "839a7d76e0ee829da23853cb6756f934"
+    },
+    "locatr-package/R/flag-address.R": {
+      "checksum": "b668d9b1f26ed73f074be34a565ad791"
+    },
+    "locatr-package/R/flag-field-conflicts.R": {
+      "checksum": "28d58db32942359ba8178b789c4da1ef"
+    },
+    "locatr-package/R/geocode-address.R": {
+      "checksum": "d966ac8181e0fbadfd86c3e0ce43ec55"
+    },
+    "locatr-package/R/geocode-arcgis.R": {
+      "checksum": "9767f4e2d89b6cf600c3d20b6d0128b4"
+    },
+    "locatr-package/R/geocode-by-name.R": {
+      "checksum": "e6774bf69d9caab016dac9bcfe239a68"
+    },
+    "locatr-package/R/geocode-cascade.R": {
+      "checksum": "152bf0ece38700eecef088de827401f2"
+    },
+    "locatr-package/R/geocode-census.R": {
+      "checksum": "e4edd6eb439993e3a742ad69e07520b2"
+    },
+    "locatr-package/R/geocode-report.R": {
+      "checksum": "c405962f7a04e0e7e9664361f943763d"
+    },
+    "locatr-package/R/io-helpers.R": {
+      "checksum": "ed9422980edf2be4ff755e7269396558"
+    },
+    "locatr-package/R/locatr-package.R": {
+      "checksum": "0cec51113feaeb415aa977a67a46b21f"
+    },
+    "locatr-package/R/match-confidence.R": {
+      "checksum": "8e6097de1df32e254be0c925f5321a05"
+    },
+    "locatr-package/R/provenance.R": {
+      "checksum": "b6632ba23a6955ff26cc710a95057a5c"
+    },
+    "locatr-package/R/review-overrides.R": {
+      "checksum": "9c113f3038624b6446d46fb3aad35129"
+    },
+    "locatr-package/R/run-app.R": {
+      "checksum": "e81b53d481dbe228da1faa80c94ccbfe"
+    },
+    "locatr-package/R/validate-geocodes.R": {
+      "checksum": "f0e3dab362d48b932b7b6c4ec4ed324e"
     }
   },
   "users": null

@@ -50,7 +50,11 @@ find_locatr_source_dir <- function() {
     Sys.getenv("PWD", unset = "")
   ))
   starts <- starts[nzchar(starts)]
-  candidates <- unique(unlist(lapply(starts, ancestor_dirs), use.names = FALSE))
+  bundled <- file.path(starts, "locatr-package")
+  candidates <- unique(c(
+    bundled,
+    unlist(lapply(starts, ancestor_dirs), use.names = FALSE)
+  ))
   hit <- candidates[vapply(candidates, is_locatr_source_dir, logical(1))]
   if (length(hit) == 0L) NULL else hit[1]
 }

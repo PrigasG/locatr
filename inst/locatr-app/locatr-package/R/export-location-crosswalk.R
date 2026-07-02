@@ -1,0 +1,63 @@
+#' Export the location crosswalk
+#'
+#' Selects the final, stable set of columns for dashboards, GIS joins, and
+#' reusable reference tables, and optionally writes them to CSV. Audit columns
+#' are retained so a reviewer can always see how each coordinate was produced,
+#' including score/type/status fields from the name lookup tier when available.
+#'
+#' @param data A fully processed data frame.
+#' @param path Optional output CSV path. When `NULL`, nothing is written.
+#'
+#' @return The crosswalk tibble (also written to `path` when supplied).
+#' @export
+export_location_crosswalk <- function(data, path = NULL) {
+  if (!"match_confidence" %in% names(data)) {
+    data <- add_match_confidence(data)
+  }
+  crosswalk <- data %>%
+    dplyr::transmute(
+      record_id           = .data$record_id,
+      record_name         = .data$record_name,
+      address_clean         = .data$address_clean,
+      city_clean            = .data$city_clean,
+      state_clean           = .data$state_clean,
+      zip_clean             = .data$zip_clean,
+      full_address_clean    = .data$full_address_clean,
+      latitude              = .data$latitude,
+      longitude             = .data$longitude,
+      location_county       = .pull_if(data, "location_county"),
+      location_locality     = .pull_if(data, "location_locality"),
+      County                = .pull_first(data, c("County", "location_county")),
+      Municipality          = .pull_first(data, c("Municipality", "location_locality")),
+      `Muni Key`            = .pull_first(data, c("Muni Key", "muni_key")),
+      muni_join_key         = .pull_if(data, "muni_join_key"),
+      county_code           = .pull_if(data, "county_code"),
+      county_fips           = .pull_if(data, "county_fips"),
+      municipality_code     = .pull_if(data, "municipality_code"),
+      municipality_geoid    = .pull_if(data, "municipality_geoid"),
+      municipality_name_standard = .pull_if(data, "municipality_name_standard"),
+      municipality_type     = .pull_if(data, "municipality_type"),
+      muni_match_status     = .pull_first(data, c("muni_match_status",
+                                                  "geography_match_status")),
+      geocode_method        = .data$geocode_method,
+      geocode_pass          = .data$geocode_pass,
+      match_status          = .data$match_status,
+      name_match_score      = .pull_if(data, "nm_score"),
+      name_match_type       = .pull_if(data, "nm_addr_type"),
+      name_match_status     = .pull_if(data, "nm_status"),
+      validation_status     = .pull_if(data, "validation_status"),
+      geography_match_status = .pull_if(data, "geography_match_status"),
+      manual_override_used  = .pull_logical(data, "manual_override_used",
+                                            default = FALSE),
+      match_confidence      = .pull_if(data, "match_confidence"),
+      confidence_reason     = .pull_if(data, "confidence_reason"),
+      placed_at             = .pull_if(data, "placed_at"),
+      cache_status          = .pull_if(data, "cache_status"),
+      review_status         = .data$review_status
+    )
+
+  if (!is.null(path)) {
+    readr::write_csv(crosswalk, path)
+  }
+  crosswalk
+}
