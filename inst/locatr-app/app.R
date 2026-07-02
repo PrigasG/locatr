@@ -10,7 +10,7 @@
 #   4. Optionally join, choose output columns, and download CSV / Excel / Parquet.
 #   5. Review provenance and download an audit report.
 #
-# Launch locally with locatr::run_locatr_app().
+# Launch locally with run_locatr_app().
 # -----------------------------------------------------------------------------
 
 library(shiny)
@@ -83,8 +83,39 @@ find_locatr_source_dir <- function() {
   if (length(hit) == 0L) NULL else hit[1]
 }
 
+find_locatr_bundle <- function() {
+  starts <- unique(c(
+    current_app_dirs(),
+    getwd(),
+    Sys.getenv("CONNECT_CONTENT_BASEDIR", unset = ""),
+    Sys.getenv("RSTUDIO_CONNECT_CONTENT_DIR", unset = ""),
+    Sys.getenv("RS_CONNECT_CONTENT_DIR", unset = ""),
+    Sys.getenv("PWD", unset = "")
+  ))
+  starts <- starts[nzchar(starts) & dir.exists(starts)]
+  bundle <- file.path(starts, "locatr-bundle.R")
+  hit <- bundle[file.exists(bundle)]
+  if (length(hit) == 0L) NULL else hit[1]
+}
+
 ensure_locatr_available <- function() {
+  bundle <- find_locatr_bundle()
+  if (!is.null(bundle)) {
+    sys.source(bundle, envir = globalenv(), keep.source = FALSE)
+    return(invisible(TRUE))
+  }
+
   if (requireNamespace("locatr", quietly = TRUE)) {
+    exported <- getNamespaceExports("locatr")
+    for (name in exported) {
+      assign(name, getExportedValue("locatr", name), envir = globalenv())
+    }
+    assign(".read_location_table", get(".read_location_table",
+                                      envir = asNamespace("locatr")),
+           envir = globalenv())
+    assign(".read_geography_layer", get(".read_geography_layer",
+                                       envir = asNamespace("locatr")),
+           envir = globalenv())
     return(invisible(TRUE))
   }
 
@@ -120,14 +151,14 @@ ensure_locatr_available()
 
 # ---- helpers ----------------------------------------------------------------
 # Tabular/shapefile reading and the attribute-key geography join now live in the
-# locatr package (locatr:::.read_location_table, locatr:::.read_geography_layer,
-# locatr::add_muni_from_key) so this app stays a thin presentation layer. The
+# locatr package (.read_location_table, .read_geography_layer,
+# add_muni_from_key) so this app stays a thin presentation layer. The
 # helpers below are UI-only: input guessing, navigation, and download shaping.
 
 # A region bbox for validation: locatr's preset where it exists, else a
 # continental-US fallback so geocoding still runs for any state.
 safe_bbox <- function(state) {
-  bb <- tryCatch(locatr::region_bbox(state), error = function(e) NULL)
+  bb <- tryCatch(region_bbox(state), error = function(e) NULL)
   if (!is.null(bb)) return(bb)
   c(lat_min = 24.5, lat_max = 49.5, lon_min = -125.0, lon_max = -66.9)
 }
@@ -153,7 +184,7 @@ clean_with_strings <- function(data, address, city, id = "", zip = "",
   if (!is.null(id) && nzchar(id))     args$id   <- rlang::sym(id)
   if (!is.null(zip) && nzchar(zip))   args$zip  <- rlang::sym(zip)
   if (!is.null(name) && nzchar(name)) args$name <- rlang::sym(name)
-  do.call(locatr::clean_addresses, args)
+  do.call(clean_addresses, args)
 }
 
 drop_selected_cols <- function(data, drop_cols) {
@@ -483,7 +514,7 @@ server <- function(input, output, session) {
   # --- Step 1: upload + preview ---------------------------------------------
   observeEvent(input$data_file, {
     rv$data <- notify_error(
-      locatr:::.read_location_table(input$data_file$datapath, input$data_file$name),
+      .read_location_table(input$data_file$datapath, input$data_file$name),
       "Could not read data file"
     )
     rv$geocoded <- NULL
@@ -548,17 +579,17 @@ server <- function(input, output, session) {
           name = input$col_name, state = input$state
         )
         incProgress(0.2, detail = "flagging bad addresses")
-        flagged <- locatr::flag_bad_addresses(cleaned)
+        flagged <- flag_bad_addresses(cleaned)
         cache <- if (isTRUE(input$use_cache)) {
           if (is.null(rv$cache)) {
-            rv$cache <- locatr::locatr_cache()
+            rv$cache <- locatr_cache()
           }
           rv$cache
         } else {
           NULL
         }
         incProgress(0.2, detail = "running the cascade")
-        geocoded <- locatr::geocode_records(
+        geocoded <- geocode_records(
           flagged, bbox = safe_bbox(input$state),
           name_min_score = input$name_min_score,
           name_accept_types = input$name_accept_types,
@@ -567,18 +598,18 @@ server <- function(input, output, session) {
           verbose = FALSE
         )
         if (!is.null(input$stated_county) && nzchar(input$stated_county)) {
-          geocoded <- locatr::flag_field_conflicts(
+          geocoded <- flag_field_conflicts(
             geocoded, stated_county = input$stated_county
           )
         } else {
-          geocoded <- locatr::flag_field_conflicts(geocoded)
+          geocoded <- flag_field_conflicts(geocoded)
         }
         geocoded
       }, "Geocoding failed")
       if (!is.null(result)) {
         rv$geocoded <- result
         rv$crosswalk <- NULL
-        rv$report <- locatr::geocode_report(result)
+        rv$report <- geocode_report(result)
         incProgress(0.4, detail = "done")
         showNotification("Geocoding complete.", type = "message")
         bslib::nav_select("nav", "5. Audit report", session = session)
@@ -623,7 +654,7 @@ server <- function(input, output, session) {
   observeEvent(input$build_geo, {
     withProgress(message = "Building Census geography ...", value = 0.5, {
       layer <- notify_error(
-        locatr::build_local_geography(state = input$geo_state,
+        build_local_geography(state = input$geo_state,
                                       geography = input$geo_level),
         "Could not build geography (is 'tigris' installed and online?)"
       )
@@ -636,7 +667,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$shp_file, {
     rv$geo_layer <- notify_error(
-      locatr:::.read_geography_layer(input$shp_file), "Could not read shapefile"
+      .read_geography_layer(input$shp_file), "Could not read shapefile"
     )
   })
 
@@ -701,7 +732,7 @@ server <- function(input, output, session) {
         is_shp <- identical(input$geo_source, "shapefile")
         if (!is_shp && is.null(rv$geo_layer)) {
           incProgress(0.2, detail = "building Census geography")
-          rv$geo_layer <- locatr::build_local_geography(
+          rv$geo_layer <- build_local_geography(
             state = input$geo_state,
             geography = input$geo_level
           )
@@ -711,7 +742,7 @@ server <- function(input, output, session) {
         }
         if (is_shp && identical(input$join_mode, "key")) {
           req(input$data_key, input$shp_key)
-          joined <- locatr::add_muni_from_key(
+          joined <- add_muni_from_key(
             rv$geocoded, rv$geo_layer,
             data_key = input$data_key, shp_key = input$shp_key,
             county_col = input$shp_county, muni_col = input$shp_locality,
@@ -721,16 +752,16 @@ server <- function(input, output, session) {
           county_col   <- if (is_shp) nz_or_null(input$shp_county) else NULL
           locality_col <- if (is_shp) nz_or_null(input$shp_locality) else NULL
           key_col      <- if (is_shp) nz_or_null(input$shp_muni_key) else NULL
-          joined <- locatr::add_muni_from_shapes(
+          joined <- add_muni_from_shapes(
             rv$geocoded, muni_shapes = rv$geo_layer,
             county_col = county_col, muni_col = locality_col,
             key_col = key_col
           )
         }
-        crosswalk <- locatr::export_location_crosswalk(joined)
+        crosswalk <- export_location_crosswalk(joined)
         if (!is.null(input$extra_census_levels) &&
             length(input$extra_census_levels) > 0L) {
-          crosswalk <- locatr::add_census_geographies(
+          crosswalk <- add_census_geographies(
             crosswalk,
             state = input$geo_state %||% input$state,
             levels = input$extra_census_levels
@@ -739,20 +770,20 @@ server <- function(input, output, session) {
         if (!is.null(input$stated_county) && nzchar(input$stated_county) &&
             input$stated_county %in% names(joined)) {
           conflict_source <- joined
-          conflict_source <- locatr::flag_field_conflicts(
+          conflict_source <- flag_field_conflicts(
             conflict_source, stated_county = input$stated_county
           )
           crosswalk$zip_state_conflict <- conflict_source$zip_state_conflict
           crosswalk$county_conflict <- conflict_source$county_conflict
           crosswalk$field_conflict <- conflict_source$field_conflict
         } else if (!"field_conflict" %in% names(crosswalk)) {
-          crosswalk <- locatr::flag_field_conflicts(crosswalk)
+          crosswalk <- flag_field_conflicts(crosswalk)
         }
         crosswalk
       }, "Join failed")
       if (!is.null(crosswalk)) {
         rv$crosswalk <- crosswalk
-        rv$report <- locatr::geocode_report(crosswalk)
+        rv$report <- geocode_report(crosswalk)
         updateRadioButtons(session, "output_source", selected = "crosswalk")
         matched <- sum(!is.na(crosswalk$location_locality))
         rate <- if (nrow(crosswalk) > 0) round(100 * matched / nrow(crosswalk)) else 0
@@ -836,14 +867,14 @@ server <- function(input, output, session) {
 
   observeEvent(input$make_report, {
     dat <- output_data_raw()
-    rv$report <- locatr::geocode_report(dat)
+    rv$report <- geocode_report(dat)
     showNotification("Audit report refreshed.", type = "message")
   })
 
   current_report <- reactive({
     if (is.null(rv$report)) {
       dat <- output_data_raw()
-      rv$report <- locatr::geocode_report(dat)
+      rv$report <- geocode_report(dat)
     }
     rv$report
   })
@@ -855,9 +886,9 @@ server <- function(input, output, session) {
 
   output$provenance_text <- renderText({
     dat <- output_data_raw()
-    prov <- tryCatch(locatr::geocode_provenance(dat), error = function(e) NULL)
+    prov <- tryCatch(geocode_provenance(dat), error = function(e) NULL)
     if (is.null(prov) && !is.null(rv$geocoded)) {
-      prov <- tryCatch(locatr::geocode_provenance(rv$geocoded),
+      prov <- tryCatch(geocode_provenance(rv$geocoded),
                        error = function(e) NULL)
     }
     if (is.null(prov)) {
@@ -932,9 +963,9 @@ server <- function(input, output, session) {
     filename = function() "locatr-provenance.txt",
     content = function(file) {
       dat <- output_data_raw()
-      prov <- tryCatch(locatr::geocode_provenance(dat), error = function(e) NULL)
+      prov <- tryCatch(geocode_provenance(dat), error = function(e) NULL)
       if (is.null(prov) && !is.null(rv$geocoded)) {
-        prov <- tryCatch(locatr::geocode_provenance(rv$geocoded),
+        prov <- tryCatch(geocode_provenance(rv$geocoded),
                          error = function(e) NULL)
       }
       if (is.null(prov)) {
@@ -947,3 +978,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
