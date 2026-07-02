@@ -1670,32 +1670,6 @@
         "RemoteSha": "1.0.5"
       }
     },
-    "locatr": {
-      "Source": "github",
-      "Repository": null,
-      "description": {
-        "Package": "locatr",
-        "Title": "Audit-Ready Geocoding and Local Geography for Messy Location Data",
-        "Version": "0.1.0",
-        "Authors@R": "\n    person(\"George\", \"Arthur\", , \"prigasgenthian48@gmail.com\", role = c(\"aut\", \"cre\"),\n           comment = c(ORCID = \"0000-0002-1975-1459\"))",
-        "Description": "Cleans, geocodes, validates, reviews, and exports messy location\n    address data supplied by the user. The package sits on top of\n    'tidygeocoder': it calls geocoding services, rejects implausible coordinates\n    with configurable region guards, applies fallback name/address matching,\n    joins points to optional local geography with 'sf', and records an audit\n    trail showing how each coordinate was produced. Outputs are designed for\n    manual review, dashboards, and reusable location crosswalks.",
-        "License": "MIT + file LICENSE",
-        "Encoding": "UTF-8",
-        "Roxygen": "list(markdown = TRUE)",
-        "RoxygenNote": "7.3.3",
-        "Depends": "R (>= 4.1.0)",
-        "Imports": "dplyr (>= 1.1.0),\nmagrittr,\nreadr,\nrlang (>= 1.1.0),\nsf,\nstringr,\ntidygeocoder",
-        "Suggests": "testthat (>= 3.1.7),\nknitr,\nrmarkdown,\ntigris,\npkgdown,\nshiny,\nbslib,\nDT,\nleaflet,\nreadxl,\nwritexl,\narrow,\ntibble",
-        "Config/testthat/edition": "3",
-        "VignetteBuilder": "knitr",
-        "Config/Needs/website": "pkgdown",
-        "URL": "https://prigasg.github.io/locatr/, https://github.com/PrigasG/locatr",
-        "BugReports": "https://github.com/PrigasG/locatr/issues",
-        "Author": "George Arthur [aut, cre] (ORCID:\n    <https://orcid.org/0000-0002-1975-1459>)",
-        "Maintainer": "George Arthur <prigasgenthian48@gmail.com>",
-        "Built": "R 4.5.1; ; 2026-06-30 15:13:32 UTC; windows"
-      }
-    },
     "magrittr": {
       "Source": "CRAN",
       "Repository": "https://cloud.r-project.org",
@@ -3342,10 +3316,10 @@
   },
   "files": {
     "app.R": {
-      "checksum": "863e9cfe4c73d4e44b7f7a335e7235ea"
+      "checksum": "45e40bee95e08664385328d7f1be3626"
     },
     "DESCRIPTION": {
-      "checksum": "ea41f867c164def93ae1cb6d252fa0c8"
+      "checksum": "be3807a865b8403900703c8a46bef79f"
     }
   },
   "users": null

@@ -10,7 +10,8 @@ test_that("bundled Shiny app has deployment metadata", {
 
   app_desc <- read.dcf(file.path(app_dir, "DESCRIPTION"))
   imports <- paste(app_desc[1, "Imports"], collapse = "\n")
-  expect_match(imports, "locatr", fixed = TRUE)
+  expect_false(grepl("locatr", imports, fixed = TRUE))
+  expect_false("Remotes" %in% colnames(app_desc))
   expect_match(imports, "readxl", fixed = TRUE)
   expect_match(imports, "rlang", fixed = TRUE)
   expect_match(imports, "tigris", fixed = TRUE)
@@ -18,7 +19,7 @@ test_that("bundled Shiny app has deployment metadata", {
   manifest <- jsonlite::fromJSON(file.path(app_dir, "manifest.json"),
                                  simplifyVector = FALSE)
   expect_identical(manifest$metadata$appmode, "shiny")
-  expect_identical(manifest$packages$locatr$Source, "github")
+  expect_null(manifest$packages$locatr)
 })
 
 test_that("bundled Shiny app parses", {

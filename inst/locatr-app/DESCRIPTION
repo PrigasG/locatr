@@ -6,7 +6,6 @@ Imports:
     DT,
     dplyr,
     leaflet,
-    locatr,
     readr,
     readxl,
     rlang,
@@ -15,5 +14,3 @@ Imports:
     tibble,
     tigris,
     writexl
-Remotes:
-    PrigasG/locatr

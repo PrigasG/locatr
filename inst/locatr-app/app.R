@@ -20,10 +20,74 @@ library(dplyr)
 library(sf)
 library(leaflet)
 
-if (!requireNamespace("locatr", quietly = TRUE)) {
-  stop("The locatr package must be installed before running this app.",
-       call. = FALSE)
+is_locatr_source_dir <- function(path) {
+  desc <- file.path(path, "DESCRIPTION")
+  if (!file.exists(desc) || !dir.exists(file.path(path, "R"))) {
+    return(FALSE)
+  }
+  pkg <- tryCatch(read.dcf(desc, fields = "Package")[1, 1],
+                  error = function(e) NA_character_)
+  identical(pkg, "locatr")
 }
+
+ancestor_dirs <- function(path) {
+  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  out <- character()
+  repeat {
+    out <- c(out, path)
+    parent <- dirname(path)
+    if (identical(parent, path)) break
+    path <- parent
+  }
+  unique(out)
+}
+
+find_locatr_source_dir <- function() {
+  starts <- unique(c(
+    getwd(),
+    Sys.getenv("CONNECT_CONTENT_BASEDIR", unset = ""),
+    Sys.getenv("RSTUDIO_CONNECT_CONTENT_DIR", unset = ""),
+    Sys.getenv("PWD", unset = "")
+  ))
+  starts <- starts[nzchar(starts)]
+  candidates <- unique(unlist(lapply(starts, ancestor_dirs), use.names = FALSE))
+  hit <- candidates[vapply(candidates, is_locatr_source_dir, logical(1))]
+  if (length(hit) == 0L) NULL else hit[1]
+}
+
+ensure_locatr_available <- function() {
+  if (requireNamespace("locatr", quietly = TRUE)) {
+    return(invisible(TRUE))
+  }
+
+  source_dir <- find_locatr_source_dir()
+  if (is.null(source_dir)) {
+    stop("The locatr package must be installed, or the app must run from a ",
+         "checkout of the locatr source repository.", call. = FALSE)
+  }
+
+  lib <- file.path(tempdir(), "locatr-app-library")
+  dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+  .libPaths(unique(c(lib, .libPaths())))
+  utils::install.packages(
+    source_dir,
+    lib = lib,
+    repos = NULL,
+    type = "source",
+    quiet = TRUE,
+    INSTALL_opts = c("--no-docs", "--no-help", "--no-html",
+                     "--no-multiarch", "--no-test-load")
+  )
+
+  if (!requireNamespace("locatr", quietly = TRUE)) {
+    stop("Could not load locatr after installing it from the local source ",
+         "checkout.", call. = FALSE)
+  }
+
+  invisible(TRUE)
+}
+
+ensure_locatr_available()
 
 # ---- helpers ----------------------------------------------------------------
 # Tabular/shapefile reading and the attribute-key geography join now live in the
