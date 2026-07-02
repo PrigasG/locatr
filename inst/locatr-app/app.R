@@ -42,17 +42,41 @@ ancestor_dirs <- function(path) {
   unique(out)
 }
 
+descendant_locatr_dirs <- function(path) {
+  if (!dir.exists(path)) {
+    return(character())
+  }
+  desc <- tryCatch(
+    list.files(path, pattern = "^DESCRIPTION$", recursive = TRUE,
+               full.names = TRUE, include.dirs = FALSE),
+    error = function(e) character()
+  )
+  dirname(desc[basename(dirname(desc)) == "locatr-package"])
+}
+
+current_app_dirs <- function() {
+  files <- vapply(sys.frames(), function(frame) {
+    file <- frame$ofile
+    if (is.null(file)) "" else file
+  }, character(1))
+  files <- files[nzchar(files)]
+  unique(dirname(normalizePath(files, winslash = "/", mustWork = FALSE)))
+}
+
 find_locatr_source_dir <- function() {
   starts <- unique(c(
+    current_app_dirs(),
     getwd(),
     Sys.getenv("CONNECT_CONTENT_BASEDIR", unset = ""),
     Sys.getenv("RSTUDIO_CONNECT_CONTENT_DIR", unset = ""),
+    Sys.getenv("RS_CONNECT_CONTENT_DIR", unset = ""),
     Sys.getenv("PWD", unset = "")
   ))
-  starts <- starts[nzchar(starts)]
+  starts <- starts[nzchar(starts) & dir.exists(starts)]
   bundled <- file.path(starts, "locatr-package")
   candidates <- unique(c(
     bundled,
+    unlist(lapply(starts, descendant_locatr_dirs), use.names = FALSE),
     unlist(lapply(starts, ancestor_dirs), use.names = FALSE)
   ))
   hit <- candidates[vapply(candidates, is_locatr_source_dir, logical(1))]
@@ -67,7 +91,8 @@ ensure_locatr_available <- function() {
   source_dir <- find_locatr_source_dir()
   if (is.null(source_dir)) {
     stop("The locatr package must be installed, or the app must run from a ",
-         "checkout of the locatr source repository.", call. = FALSE)
+         "bundle containing locatr-package. Working directory: ", getwd(),
+         call. = FALSE)
   }
 
   lib <- file.path(tempdir(), "locatr-app-library")
