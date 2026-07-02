@@ -31,6 +31,11 @@
 #' @param name_accept_types ArcGIS address types precise enough for a name lookup
 #'   to pass without review. Passed to [geocode_by_name()].
 #' @param verbose Whether to print a per-tier match tally.
+#' @param cache Optional [locatr_cache()] shared across the network tiers
+#'   (Census, ArcGIS, name lookup), so repeated addresses are served from the
+#'   cache and a re-run reproduces coordinates without re-querying.
+#' @param refresh If `TRUE`, ignore cached entries and re-query every tier,
+#'   overwriting the cache. Defaults to `FALSE`.
 #'
 #' @return `data` with coordinates and the full audit trail populated.
 #' @export
@@ -42,13 +47,22 @@ geocode_records <- function(data,
                                name_min_score = 90,
                                name_accept_types = c("PointAddress", "Subaddress",
                                                      "StreetAddress"),
-                               verbose = TRUE) {
+                               verbose = TRUE,
+                               cache = NULL,
+                               refresh = FALSE) {
   stopifnot("review_status" %in% names(data))
+  .validate_cache_args(cache, refresh)
   tiers <- match.arg(tiers, choices = c("census", "arcgis", "name"),
                      several.ok = TRUE)
 
   say <- function(...) if (isTRUE(verbose)) message(...)
   out <- data
+  run_started <- .cache_now()
+  cache_before <- if (!is.null(cache)) {
+    c(cache$hits, cache$misses, cache$writes)
+  } else {
+    rep(NA_integer_, 3L)
+  }
 
   if (!is.null(reference)) {
     say("Tier 0 - reference backfill ...")
@@ -59,7 +73,7 @@ geocode_records <- function(data,
 
   if ("census" %in% tiers) {
     say("Tier 1 - Census structured geocode ...")
-    out <- geocode_census(out)
+    out <- geocode_census(out, cache = cache, refresh = refresh)
     out <- validate_geocodes(out, boundary = boundary, bbox = bbox)
     say("  placed in region so far: ", .n_in_region(out, bbox))
   } else {
@@ -68,7 +82,8 @@ geocode_records <- function(data,
 
   if ("arcgis" %in% tiers) {
     say("Tier 2 - ArcGIS address fallback ...")
-    out <- geocode_arcgis(out, method = "arcgis", bbox = bbox)
+    out <- geocode_arcgis(out, method = "arcgis", bbox = bbox,
+                          cache = cache, refresh = refresh)
     out <- validate_geocodes(out, boundary = boundary, bbox = bbox)
     say("  placed in region so far: ", .n_in_region(out, bbox))
   }
@@ -77,12 +92,18 @@ geocode_records <- function(data,
     say("Tier 3 - name lookup fallback ...")
     out <- geocode_by_name(out, method = "arcgis", bbox = bbox,
                            min_score = name_min_score,
-                           accept_types = name_accept_types)
+                           accept_types = name_accept_types,
+                           cache = cache, refresh = refresh)
     out <- validate_geocodes(out, boundary = boundary, bbox = bbox)
     say("  placed in region so far: ", .n_in_region(out, bbox))
   }
 
-  add_match_confidence(.finalize_review_status(out))
+  out <- add_match_confidence(.finalize_review_status(out))
+  out <- .stamp_placement(out, cache, run_started, bbox)
+  attr(out, "locatr_run") <- .locatr_run_manifest(
+    out, tiers, reference, boundary, bbox, cache, run_started, cache_before
+  )
+  out
 }
 
 # Count rows whose coordinates fall inside the configured bbox.

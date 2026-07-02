@@ -21,6 +21,7 @@ reference:
     contents:
       - clean_addresses
       - flag_bad_addresses
+      - flag_field_conflicts
   - title: Geocode and validate
     contents:
       - geocode_records
@@ -40,6 +41,7 @@ reference:
       - add_county_muni
       - add_muni_from_shapes
       - add_muni_from_key
+      - add_census_geographies
       - backfill_from_reference
       - write_geocode_review
       - apply_manual_overrides
@@ -51,6 +53,13 @@ reference:
       - plot_geocode_review_map
       - suggest_geography_level
       - compare_geocode_runs
+  - title: Reproducibility
+    contents:
+      - locatr_cache
+      - cache_info
+      - cache_clear
+      - geocode_provenance
+      - geocode_report
   - title: App
     contents:
       - run_locatr_app

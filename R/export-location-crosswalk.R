@@ -51,6 +51,8 @@ export_location_crosswalk <- function(data, path = NULL) {
                                             default = FALSE),
       match_confidence      = .pull_if(data, "match_confidence"),
       confidence_reason     = .pull_if(data, "confidence_reason"),
+      placed_at             = .pull_if(data, "placed_at"),
+      cache_status          = .pull_if(data, "cache_status"),
       review_status         = .data$review_status
     )
 

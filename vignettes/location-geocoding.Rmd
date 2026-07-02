@@ -26,7 +26,7 @@ directly. Use `locatr` when the coordinates need to be defensible and reusable.
 
 ## 1. Pull and clean
 
-```{r}
+```{r, eval=FALSE, purl=FALSE}
 library(locatr)
 
 cleaned <- records %>%
@@ -43,7 +43,7 @@ review. Only address and city are required. If your file has no ID, locatr
 generates row-number IDs; if it has no ZIP, `zip_clean` stays `NA` and the
 single-line address omits the ZIP instead of ending in `NA`:
 
-```{r}
+```{r, eval=FALSE, purl=FALSE}
 cleaned_minimal <- records %>%
   clean_addresses(address = Address, city = City, state = "NJ") %>%
   flag_bad_addresses()
@@ -55,7 +55,7 @@ does not block geocoding when address + city + state are present.
 For one-off review, use `geocode_address()` to see ranked ArcGIS candidates for
 a single address:
 
-```{r}
+```{r, eval=FALSE, purl=FALSE}
 if (interactive()) {
   geocode_address("1600 Pennsylvania Ave NW", city = "Washington", state = "DC")
 }
@@ -63,7 +63,7 @@ if (interactive()) {
 
 ## 2. Geocode with a guarded cascade
 
-```{r}
+```{r, eval=FALSE, purl=FALSE}
 geocoded <- geocode_records(cleaned)   # Census -> ArcGIS -> name lookup
 ```
 
@@ -73,7 +73,7 @@ is still unplaced. The `geocode_pass` column records which tier placed each row.
 
 ## 3. Geography join
 
-```{r}
+```{r, eval=FALSE, purl=FALSE}
 with_geography <- add_county_muni(geocoded, state = "NJ")
 ```
 
@@ -85,7 +85,7 @@ e.g. `add_muni_from_shapes(geocoded, muni_shapes = my_local_shapes)`, or use
 
 ## 4. Review, override, export
 
-```{r}
+```{r, eval=FALSE, purl=FALSE}
 write_geocode_review(with_geography, "manual_review.csv")
 
 final <- with_geography %>%
@@ -96,3 +96,40 @@ final <- with_geography %>%
 `final` is ready for Tableau, GIS joins, or a reusable reference table, and
 every row carries the audit columns that explain how its coordinate was
 produced.
+
+## 5. Reproducible runs and provenance
+
+Because the cascade calls external services, reuse a `locatr_cache()` to make a
+run reproducible and cheap to repeat:
+
+```{r, eval=FALSE, purl=FALSE}
+cache <- locatr_cache("geocode_cache.rds")  # omit the path for a memory-only cache
+
+geocoded <- geocode_records(cleaned, cache = cache)
+
+# a repeat run replays cached coordinates instead of re-querying
+geocoded_again <- geocode_records(cleaned, cache = cache)
+
+cache_info(cache)
+```
+
+The cache is keyed by the exact query and request parameters and stores one row
+per candidate result (with a no-match sentinel so misses replay too). Pass
+`refresh = TRUE` to re-query and overwrite. Nothing is written to disk unless you
+give `locatr_cache()` a path.
+
+Every `geocode_records()` result also carries a run manifest and two per-row
+provenance columns:
+
+```{r, eval=FALSE, purl=FALSE}
+geocode_provenance(geocoded)
+
+geocoded[, c("record_id", "placed_at", "cache_status")]
+```
+
+`cache_status` is `fresh`, `cached`, `reference`, `manual`, or `unplaced`, and
+`placed_at` is when the coordinate actually entered the output (the cached
+timestamp for cached rows, not the current run). Both columns are carried into
+`export_location_crosswalk()`. The manifest is attached as an attribute, so read
+it with `geocode_provenance()` right after the run, before any later data-frame
+operation that might drop attributes.

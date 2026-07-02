@@ -112,6 +112,17 @@ cleaned <- records %>%
 Rows with missing ZIP remain geocodable. Rows missing address/city, PO boxes,
 placeholder addresses, and test records still go to manual review.
 
+To catch data-entry errors the geocoder would silently accept, run
+`flag_field_conflicts()`: it flags a ZIP that cannot belong to the stated state
+(a conservative USPS-region check that never false-flags) and, given a stated
+county column, a county that disagrees with the geocoded `location_county`. It
+adds `zip_state_conflict`, `county_conflict`, and a combined `field_conflict`
+column without changing any coordinate.
+
+```r
+checked <- flag_field_conflicts(with_geography, stated_county = "County")
+```
+
 ## Quick single-address lookup
 
 To check one address interactively - no data frame required - use
@@ -202,9 +213,71 @@ low-score hits keep coordinates for reviewer context but remain in
 `needs_manual_review`. The Shiny app exposes the name score threshold and the
 address types that are allowed to pass without review.
 
+## Reproducible Runs
+
+Geocoding hits external services, so a run is only reproducible if you can replay
+it without re-querying. Pass a `locatr_cache()` to `geocode_records()` (it also
+works on the single tiers and on `geocode_address()`): repeated addresses are
+served from the cache, and a later run reproduces the same coordinates offline
+instead of re-hitting Census or ArcGIS.
+
+```r
+cache <- locatr_cache("nj_geocode_cache.rds")  # persistent; omit the path for memory-only
+
+geocoded <- geocode_records(cleaned, bbox = region_bbox("NJ"), cache = cache)
+
+# a second run reuses the cache - no network for addresses already placed
+geocoded_again <- geocode_records(cleaned, bbox = region_bbox("NJ"), cache = cache)
+
+cache_info(cache)   # rows, distinct keys, per-method counts, file size, oldest/newest
+```
+
+The cache stores one row per candidate result (plus a no-match sentinel, so
+misses are replayed too), keyed by the exact query and request parameters. Pass
+`refresh = TRUE` to force a re-query and overwrite. Nothing is written to disk
+unless you give `locatr_cache()` a path.
+
+Every `geocode_records()` result also carries a run manifest and two per-row
+provenance columns:
+
+```r
+geocode_provenance(geocoded)  # run id, timestamp, versions, tiers, cache activity, status counts
+
+geocoded[, c("record_id", "placed_at", "cache_status")]
+```
+
+`cache_status` is one of `fresh` (geocoded this run), `cached` (the cache already
+held the coordinate before this run), `reference`, `manual`, or `unplaced`.
+`placed_at` records when a coordinate actually entered the output - the cached
+timestamp for cached rows, or an explicit reference/override timestamp when your
+data carries one, rather than the current run time. Both columns flow through
+`export_location_crosswalk()`. The manifest is attached as an attribute
+(`attr(geocoded, "locatr_run")`), so read it with `geocode_provenance()` directly
+off the `geocode_records()` result, before further data-frame operations that
+might drop attributes.
+
+For a shareable summary, `geocode_report()` rolls the manifest and audit columns
+into counts by review status, placing tier, and cache status, a
+`match_confidence` summary, and an auto-generated plain-language methods
+paragraph for a report or paper. Print it, or write Markdown with `file =`:
+
+```r
+geocode_report(geocoded)                      # printed summary + methods paragraph
+geocode_report(geocoded, file = "run.md")     # Markdown report
+```
+
 ## Regions And Geography
 
-For geocoding, validation, and ArcGIS search extent, pass a bbox:
+`region_bbox()` ships coarse guard boxes for every US state and `DC`
+(case-insensitive), so validation works out of the box beyond NJ:
+
+```r
+geocoded <- geocode_records(cleaned, bbox = region_bbox("CA"))
+```
+
+These presets are deliberately generous sanity boxes, not precise boundaries.
+For a tighter or non-state region, pass your own bbox, or derive one from an
+`sf` layer with `bbox_from_sf()`:
 
 ```r
 custom_bbox <- c(lat_min = 38.0, lat_max = 39.0, lon_min = -77.5, lon_max = -76.0)
@@ -281,3 +354,15 @@ fallback, but production joins should prefer `muni_join_key`,
 Use `add_muni_from_shapes()` for point-in-polygon joins against your own
 boundary layer, or `add_muni_from_key()` when your records and geography share a
 code column such as ZIP, FIPS, or GEOID.
+
+For analysis and policy geographies beyond county/municipality - census tract,
+block group, ZCTA, congressional and state legislative districts, or unified
+school districts - `add_census_geographies()` attaches any combination in one
+call, each as a `<level>_geoid` / `<level>_name` pair:
+
+```r
+enriched <- add_census_geographies(
+  geocoded, state = "NJ",
+  levels = c("tract", "congressional_district", "school_district")
+)
+```

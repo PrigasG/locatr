@@ -12,7 +12,9 @@ geocode_records(
   bbox = region_bbox("NJ"),
   name_min_score = 90,
   name_accept_types = c("PointAddress", "Subaddress", "StreetAddress"),
-  verbose = TRUE
+  verbose = TRUE,
+  cache = NULL,
+  refresh = FALSE
 )
 }
 \arguments{
@@ -37,6 +39,13 @@ review. Passed to \code{\link[=geocode_by_name]{geocode_by_name()}}.}
 to pass without review. Passed to \code{\link[=geocode_by_name]{geocode_by_name()}}.}
 
 \item{verbose}{Whether to print a per-tier match tally.}
+
+\item{cache}{Optional \code{\link[=locatr_cache]{locatr_cache()}} shared across the network tiers
+(Census, ArcGIS, name lookup), so repeated addresses are served from the
+cache and a re-run reproduces coordinates without re-querying.}
+
+\item{refresh}{If \code{TRUE}, ignore cached entries and re-query every tier,
+overwriting the cache. Defaults to \code{FALSE}.}
 }
 \value{
 \code{data} with coordinates and the full audit trail populated.

@@ -7,3 +7,7 @@
 docs/
 *.tar.gz
 *.Rcheck/
+
+# Local-only working spec for the standout roadmap (never commit)
+SPEC.md
+spec.md

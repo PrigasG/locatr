@@ -4,7 +4,14 @@
 \alias{geocode_arcgis}
 \title{ArcGIS address fallback pass (Google-like fuzzy matching)}
 \usage{
-geocode_arcgis(data, method = "arcgis", bbox = region_bbox("NJ"), ...)
+geocode_arcgis(
+  data,
+  method = "arcgis",
+  bbox = region_bbox("NJ"),
+  ...,
+  cache = NULL,
+  refresh = FALSE
+)
 }
 \arguments{
 \item{data}{A data frame from \code{\link[=geocode_census]{geocode_census()}} (or after
@@ -17,6 +24,13 @@ geocode_arcgis(data, method = "arcgis", bbox = region_bbox("NJ"), ...)
 \code{\link[=region_bbox]{region_bbox()}}.}
 
 \item{...}{Passed through to \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}}.}
+
+\item{cache}{Optional \code{\link[=locatr_cache]{locatr_cache()}}. When supplied, the ArcGIS lookup for
+a given \code{full_address_clean} (under the same region extent) is served from
+the cache instead of re-querying.}
+
+\item{refresh}{If \code{TRUE}, ignore cached entries and re-query, overwriting
+them. Defaults to \code{FALSE}.}
 }
 \value{
 \code{data} with fallback columns \code{fb_latitude}, \code{fb_longitude},

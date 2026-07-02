@@ -10,7 +10,9 @@ geocode_by_name(
   bbox = region_bbox("NJ"),
   min_score = 90,
   accept_types = c("PointAddress", "Subaddress", "StreetAddress"),
-  ...
+  ...,
+  cache = NULL,
+  refresh = FALSE
 )
 }
 \arguments{
@@ -33,6 +35,13 @@ point-address types \code{c("PointAddress", "Subaddress", "StreetAddress")}.}
 \item{...}{Passed through to \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}}. \code{full_results = TRUE}
 is requested automatically so scores are available; pass
 \code{full_results = FALSE} to opt out (which also disables score gating).}
+
+\item{cache}{Optional \code{\link[=locatr_cache]{locatr_cache()}}. When supplied, the name lookup for a
+given query (under the same region extent) is served from the cache,
+including its cached score and address type, instead of re-querying.}
+
+\item{refresh}{If \code{TRUE}, ignore cached entries and re-query, overwriting
+them. Defaults to \code{FALSE}.}
 }
 \value{
 \code{data} with name-lookup audit columns \code{nm_latitude}, \code{nm_longitude},

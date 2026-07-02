@@ -7,19 +7,22 @@
 region_bbox(region = "NJ")
 }
 \arguments{
-\item{region}{Region preset. Currently \code{"NJ"} is included for the package's
-first production workflow. For other regions, pass a custom named vector
-with \code{lat_min}, \code{lat_max}, \code{lon_min}, and \code{lon_max}.}
+\item{region}{Two-letter US state abbreviation (or \code{"DC"}), case-insensitive.
+Defaults to \code{"NJ"}.}
 }
 \value{
 A named numeric vector with elements \code{lat_min}, \code{lat_max},
 \code{lon_min}, \code{lon_max}.
 }
 \description{
-Returns an approximate latitude/longitude bounding box for a named region,
-used as a fast sanity check on geocoded coordinates. Presets are deliberately
-a little generous so legitimate edge locations are not rejected.
+Returns an approximate latitude/longitude bounding box for a US state (or
+\code{"DC"}), used as a fast sanity guard on geocoded coordinates. Presets are
+deliberately a little generous so legitimate edge locations are not rejected;
+they are coarse guard boxes, not precise boundaries. For a tighter or
+non-state region, pass your own named vector, or derive one from an \code{sf}
+layer with \code{\link[=bbox_from_sf]{bbox_from_sf()}}.
 }
 \examples{
 region_bbox("NJ")
+region_bbox("CA")
 }

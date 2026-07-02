@@ -16,7 +16,9 @@ geocode_address(
   geography_shapes = NULL,
   bbox = NULL,
   quiet = TRUE,
-  show_progress = interactive()
+  show_progress = interactive(),
+  cache = NULL,
+  refresh = FALSE
 )
 }
 \arguments{
@@ -55,6 +57,13 @@ downloads/joins so the console shows only the returned candidate table.}
 
 \item{show_progress}{If \code{TRUE}, print short progress messages while the
 lookup runs. Defaults to \code{interactive()}.}
+
+\item{cache}{Optional \code{\link[=locatr_cache]{locatr_cache()}} object. When supplied, the ArcGIS
+candidate lookup for a given query is served from the cache on repeat calls
+(and replayable offline) instead of re-hitting the service.}
+
+\item{refresh}{If \code{TRUE}, bypass any cached entry for this query and re-query
+the service, overwriting the cached result. Defaults to \code{FALSE}.}
 }
 \value{
 A tibble of candidates ordered by descending \code{match_score}, with

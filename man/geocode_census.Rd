@@ -4,17 +4,24 @@
 \alias{geocode_census}
 \title{Primary geocode pass via the US Census batch geocoder}
 \usage{
-geocode_census(data, ...)
+geocode_census(data, ..., cache = NULL, refresh = FALSE)
 }
 \arguments{
 \item{data}{A data frame from \code{\link[=flag_bad_addresses]{flag_bad_addresses()}}.}
 
 \item{...}{Passed through to \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}} (e.g. \code{full_results}).}
+
+\item{cache}{Optional \code{\link[=locatr_cache]{locatr_cache()}}. When supplied, rows whose structured
+query is already cached are filled from it instead of re-querying Census.}
+
+\item{refresh}{If \code{TRUE}, ignore cached entries and re-query, overwriting
+them. Defaults to \code{FALSE}.}
 }
 \value{
 \code{data} with \code{latitude}, \code{longitude}, \code{geocode_method},
 \code{geocode_pass}, \code{match_status}, plus Census full-result columns when
-\code{full_results = TRUE}.
+\code{full_results = TRUE} (full-result columns are not stored in the cache, so
+cache-filled rows omit them).
 }
 \description{
 Geocodes only the rows marked \code{ready_for_geocoding}, using the \emph{structured}

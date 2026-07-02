@@ -40,6 +40,11 @@
 #'   downloads/joins so the console shows only the returned candidate table.
 #' @param show_progress If `TRUE`, print short progress messages while the
 #'   lookup runs. Defaults to `interactive()`.
+#' @param cache Optional [locatr_cache()] object. When supplied, the ArcGIS
+#'   candidate lookup for a given query is served from the cache on repeat calls
+#'   (and replayable offline) instead of re-hitting the service.
+#' @param refresh If `TRUE`, bypass any cached entry for this query and re-query
+#'   the service, overwriting the cached result. Defaults to `FALSE`.
 #'
 #' @return A tibble of candidates ordered by descending `match_score`, with
 #'   `query_id`, `rank`, `match_score`, `match_addr_type`, `matched_address`,
@@ -61,7 +66,8 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
                             id = NULL, min_score = 0, max_candidates = 5L,
                             geography = TRUE, geography_shapes = NULL,
                             bbox = NULL, quiet = TRUE,
-                            show_progress = interactive()) {
+                            show_progress = interactive(),
+                            cache = NULL, refresh = FALSE) {
   if (!is.character(address) || length(address) != 1L || is.na(address)) {
     stop("`address` must be a single, non-missing character string.",
          call. = FALSE)
@@ -102,6 +108,7 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
       is.na(show_progress)) {
     stop("`show_progress` must be `TRUE` or `FALSE`.", call. = FALSE)
   }
+  .validate_cache_args(cache, refresh)
   max_candidates <- as.integer(max_candidates)
 
   query_id <- if (is.null(id)) NA_character_ else as.character(id)[1]
@@ -118,8 +125,9 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
   # another state) from being starved before the dedupe + cap.
   fetch_n <- min(50L, max(as.integer(max_candidates) * 5L, 25L))
   .geocode_address_progress(show_progress, "Looking up address candidates ...")
-  cands <- .arcgis_candidates(single_line, max_candidates = fetch_n,
-                              bbox = bbox)
+  cands <- .arcgis_candidates_cached(single_line, max_candidates = fetch_n,
+                                     bbox = bbox, cache = cache,
+                                     refresh = refresh)
   .geocode_address_progress(show_progress, "Scoring candidates ...")
   cands <- cands %>%
     dplyr::filter(!is.na(.data$match_score), .data$match_score >= min_score) %>%
@@ -391,16 +399,30 @@ geocode_address <- function(address, city = NULL, state = NULL, zip = NULL,
                                 bbox[["lon_max"]], bbox[["lat_max"]], sep = ",")
   }
 
-  resp <- httr::GET(
-    paste0("https://geocode.arcgis.com/arcgis/rest/services/World/",
-           "GeocodeServer/findAddressCandidates"),
-    query = query
+  # Fail gracefully (informative warning, no candidates) if the service is
+  # unreachable or errors, per CRAN policy for internet-using packages.
+  parsed <- tryCatch(
+    {
+      resp <- httr::GET(
+        paste0("https://geocode.arcgis.com/arcgis/rest/services/World/",
+               "GeocodeServer/findAddressCandidates"),
+        query = query
+      )
+      httr::stop_for_status(resp)
+      jsonlite::fromJSON(
+        httr::content(resp, as = "text", encoding = "UTF-8"),
+        simplifyVector = TRUE
+      )
+    },
+    error = function(e) {
+      warning("ArcGIS geocoding request failed (", conditionMessage(e),
+              "); returning no candidates.", call. = FALSE)
+      NULL
+    }
   )
-  httr::stop_for_status(resp)
-  parsed <- jsonlite::fromJSON(
-    httr::content(resp, as = "text", encoding = "UTF-8"),
-    simplifyVector = TRUE
-  )
+  if (is.null(parsed)) {
+    return(empty)
+  }
 
   cands <- parsed$candidates
   if (is.null(cands) || !is.data.frame(cands) || nrow(cands) == 0L) {

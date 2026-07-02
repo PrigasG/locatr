@@ -17,15 +17,21 @@
 #' @param bbox Bounding box used to reject out-of-region matches; see
 #'   [region_bbox()].
 #' @param ... Passed through to [tidygeocoder::geocode()].
+#' @param cache Optional [locatr_cache()]. When supplied, the ArcGIS lookup for
+#'   a given `full_address_clean` (under the same region extent) is served from
+#'   the cache instead of re-querying.
+#' @param refresh If `TRUE`, ignore cached entries and re-query, overwriting
+#'   them. Defaults to `FALSE`.
 #'
 #' @return `data` with fallback columns `fb_latitude`, `fb_longitude`,
 #'   `fb_status`, and updated `latitude`, `longitude`, `geocode_method`,
 #'   `geocode_pass`, `match_status` for rows this pass filled.
 #' @export
 geocode_arcgis <- function(data, method = "arcgis",
-                           bbox = region_bbox("NJ"), ...) {
+                           bbox = region_bbox("NJ"), ...,
+                           cache = NULL, refresh = FALSE) {
   stopifnot(all(c("record_id", "latitude", "longitude") %in% names(data)))
-  dots <- .region_geocoder_dots(method, bbox, list(...))
+  .validate_cache_args(cache, refresh)
 
   needs_fallback <- data %>%
     dplyr::mutate(.retryable_for_geocoding = .retryable_for_geocoding(.)) %>%
@@ -46,15 +52,7 @@ geocode_arcgis <- function(data, method = "arcgis",
     )
   }
 
-  fb_input <- needs_fallback %>%
-    dplyr::select("record_id", "full_address_clean")
-  fb_args <- c(
-    list(fb_input, address = "full_address_clean", method = method,
-         lat = "fb_latitude", long = "fb_longitude"),
-    dots
-  )
-
-  fb <- do.call(tidygeocoder::geocode, fb_args) %>%
+  fb <- .arcgis_fill_coords(needs_fallback, method, bbox, cache, refresh, ...) %>%
     dplyr::mutate(
       fb_in_bbox = in_bbox(.data$fb_latitude, .data$fb_longitude, bbox),
       fb_status = dplyr::case_when(
@@ -81,4 +79,44 @@ geocode_arcgis <- function(data, method = "arcgis",
       match_status   = dplyr::if_else(.data$use_fb, "matched", .data$match_status)
     ) %>%
     dplyr::select(-"use_fb")
+}
+
+# Return raw ArcGIS fallback coordinates (record_id, fb_latitude, fb_longitude)
+# for the rows needing a fallback, reusing a cache when supplied. The bbox
+# rejection is applied by the caller, so the cache holds the raw geocoder
+# coordinate keyed by address + region extent. `cache = NULL` is the original
+# call, verbatim.
+.arcgis_fill_coords <- function(needs_fallback, method, bbox, cache, refresh,
+                                ...) {
+  dots <- .region_geocoder_dots(method, bbox, list(...))
+  fb_input <- needs_fallback %>%
+    dplyr::select("record_id", "full_address_clean")
+  live <- function(d) {
+    fb_args <- c(
+      list(d, address = "full_address_clean", method = method,
+           lat = "fb_latitude", long = "fb_longitude"),
+      dots
+    )
+    do.call(tidygeocoder::geocode, fb_args)
+  }
+  if (is.null(cache)) {
+    g <- live(fb_input)
+    return(tibble::tibble(record_id = g$record_id,
+                          fb_latitude = g$fb_latitude,
+                          fb_longitude = g$fb_longitude))
+  }
+
+  coords <- .batch_geocode_cached(
+    fb_input, .arcgis_query_vec(fb_input), method = "arcgis_oneline",
+    params = .arcgis_params(method, bbox, dots), cache = cache,
+    refresh = refresh,
+    run = function(d) {
+      g <- live(d)
+      tibble::tibble(record_id = g$record_id, latitude = g$fb_latitude,
+                     longitude = g$fb_longitude)
+    }
+  )
+  tibble::tibble(record_id = coords$record_id,
+                 fb_latitude = coords$latitude,
+                 fb_longitude = coords$longitude)
 }
