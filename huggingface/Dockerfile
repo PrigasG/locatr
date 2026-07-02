@@ -26,8 +26,13 @@ RUN install2.r --error --skipinstalled \
       tigris \
       remotes
 
+# Cache-bust the locatr install layer whenever GitHub master changes.
+ARG LOCATR_REF=ba05d1e
+ENV LOCATR_REF=${LOCATR_REF}
+ADD https://api.github.com/repos/PrigasG/locatr/commits/${LOCATR_REF} /tmp/locatr-ref.json
+
 # Install locatr itself (ships the app under inst/locatr-app).
-RUN R -e "remotes::install_github('PrigasG/locatr', dependencies = c('Depends', 'Imports'), upgrade = 'never')"
+RUN R -e "remotes::install_github('PrigasG/locatr', ref = Sys.getenv('LOCATR_REF', 'ba05d1e'), dependencies = c('Depends', 'Imports'), upgrade = 'never')"
 
 # Hugging Face Spaces route traffic to port 7860.
 ENV PORT=7860
