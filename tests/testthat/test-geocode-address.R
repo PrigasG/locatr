@@ -232,7 +232,8 @@ test_that("geocode_address suppresses routine geography messages by default", {
   expect_output(
     expect_message(
       res <- geocode_address("1600 Pennsylvania Ave NW", city = "Washington",
-                             state = "DC", geography = TRUE),
+                             state = "DC", geography = TRUE,
+                             show_progress = FALSE),
       NA
     ),
     NA
@@ -242,7 +243,8 @@ test_that("geocode_address suppresses routine geography messages by default", {
   expect_message(
     expect_output(
       geocode_address("1600 Pennsylvania Ave NW", city = "Washington",
-                      state = "DC", geography = TRUE, quiet = FALSE),
+                      state = "DC", geography = TRUE, quiet = FALSE,
+                      show_progress = FALSE),
       "routine progress chatter"
     ),
     "routine geography chatter"

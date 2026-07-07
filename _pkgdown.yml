@@ -60,6 +60,10 @@ reference:
       - cache_clear
       - geocode_provenance
       - geocode_report
+  - title: Review
+    contents:
+      - build_review_overrides
+      - run_locatr_review_app
   - title: App
     contents:
       - run_locatr_app

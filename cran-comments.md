@@ -4,9 +4,11 @@
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 2 notes
 
 * This is a new submission.
+* Local Windows check reported "unable to verify current time". This appears to
+  be local environment/network related and is not package-specific.
 
 ## Downstream dependencies
 
