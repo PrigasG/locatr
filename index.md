@@ -216,6 +216,34 @@ The app is also published as a Hugging Face Space (Docker):
 scaffolding lives in
 [`huggingface/`](https://prigasg.github.io/locatr/huggingface/).
 
+## Map-based review app
+
+A separate Shiny app takes records from upload through geocoding to
+map-based review: upload a file, map the ID and address columns, then
+geocode the addresses (clean, flag, cascade, and attach
+county/municipality) or use existing coordinates. The flagged records
+appear on a map to accept, reject, or relocate, and the app produces a
+completed override CSV that feeds straight into
+[`apply_manual_overrides()`](https://prigasg.github.io/locatr/reference/apply_manual_overrides.md).
+
+``` r
+
+run_locatr_review_app()
+```
+
+The decision logic is a plain, testable function you can also use
+headless:
+
+``` r
+
+overrides <- build_review_overrides(geocoded, decisions)   # accept / reject / relocate
+final <- apply_manual_overrides(geocoded, "manual_review_completed.csv")
+```
+
+`accept` confirms the automated coordinate, `relocate` substitutes a
+reviewer coordinate, and `reject` leaves the point unplaced - all
+recorded in the override table’s `manual_note`.
+
 ## The Geocoding Cascade
 
 [`geocode_records()`](https://prigasg.github.io/locatr/reference/geocode_records.md)

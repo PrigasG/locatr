@@ -85,6 +85,13 @@
   [`print(`*`<locatr_report>`*`)`](https://prigasg.github.io/locatr/reference/geocode_report.md)
   : Summarise a geocoding run into a provenance report
 
+## Review
+
+- [`build_review_overrides()`](https://prigasg.github.io/locatr/reference/build_review_overrides.md)
+  : Build a manual-override table from review decisions
+- [`run_locatr_review_app()`](https://prigasg.github.io/locatr/reference/run_locatr_review_app.md)
+  : Launch the locatr map-based review app
+
 ## App
 
 - [`run_locatr_app()`](https://prigasg.github.io/locatr/reference/run_locatr_app.md)
