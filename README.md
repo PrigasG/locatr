@@ -186,7 +186,9 @@ run_locatr_app()
 
 The app is also published as a Hugging Face Space (Docker):
 <https://huggingface.co/spaces/Prigas89/locatr_reviewer>. The deployment
-scaffolding lives in [`huggingface/`](huggingface/).
+scaffolding lives in the
+[`huggingface/`](https://github.com/PrigasG/locatr/tree/master/huggingface)
+folder on GitHub.
 
 ## Map-based review app
 

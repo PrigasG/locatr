@@ -4,11 +4,17 @@
 
 ## R CMD check results
 
-0 errors | 0 warnings | 2 notes
+0 errors | 0 warnings | 1 note
 
 * This is a new submission.
-* Local Windows check reported "unable to verify current time". This appears to
-  be local environment/network related and is not package-specific.
+
+## Resubmission
+
+This is a resubmission. In this version I have:
+
+* Replaced a relative README link to `huggingface/` with the corresponding
+  GitHub URL, so the README no longer contains a file URI for a directory that
+  is excluded from the CRAN source tarball.
 
 ## Downstream dependencies
 
